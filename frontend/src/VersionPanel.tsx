@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { ApiError, Detail, ImportSummary, Issue, LANGUAGES, Me, versions } from "./api";
+import VideoPanel from "./VideoPanel";
 
 const langName = (c: string) => LANGUAGES.find((l) => l.code === c)?.label ?? c;
 const pretty = (s: string) => s.replace(/_/g, " ");
@@ -90,8 +91,9 @@ export default function VersionPanel({ versionId, me, onChanged }: { versionId: 
           </>}
           {can("content_operator") && (s === "approved" || s === "rejected") && <button className="primary" onClick={() => act("reopen")}>Reopen as draft</button>}
         </div>
-        {s === "approved" && <p className="muted">Approved content can be sent to video production (next release).</p>}
       </>}
+
+      {d.has_content && <VideoPanel versionId={versionId} approved={s === "approved"} me={me} />}
 
       {d.events.length > 0 && <>
         <h4>History</h4>

@@ -78,3 +78,33 @@ export const versions = {
     return data as ImportSummary;
   },
 };
+
+export interface VideoJob {
+  id: string; state: string; stage: string | null; percent: number; error_code: string | null; error_message: string | null;
+  retryable: boolean; awaiting_audio: boolean; settings: { provider: string; mode: string; profile: string; subtitles: boolean };
+  created_at: string; finished_at: string | null;
+}
+export interface VideoAsset { id: string; kind: string; filename: string; size_bytes: number; duration_seconds?: number; width?: number; height?: number; fps?: number }
+export interface VideoSummary { job: VideoJob | null; assets: VideoAsset[]; history: VideoJob[]; can_generate: boolean; blocked_reason: string | null }
+export interface VideoCaps { providers: { name: string; modes: string[]; configured: boolean }[]; profiles: string[] }
+
+export const video = {
+  get: (versionId: string) => call<VideoSummary>("GET", `/lesson-versions/${versionId}/video`),
+  caps: () => call<VideoCaps>("GET", "/video/capabilities"),
+  generate: (versionId: string, body: { provider: string; profile: string; subtitles: boolean; rerender?: boolean }) =>
+    call<VideoSummary>("POST", `/lesson-versions/${versionId}/video`, body),
+  retry: (jobId: string) => call<VideoSummary>("POST", `/video-jobs/${jobId}/retry`, {}),
+  cancel: (jobId: string) => call<VideoSummary>("POST", `/video-jobs/${jobId}/cancel`, {}),
+  async uploadAudio(jobId: string, file: File): Promise<VideoSummary> {
+    const form = new FormData();
+    form.append("audio", file);
+    const res = await fetch(`/api/video-jobs/${jobId}/audio`, { method: "POST", body: form, credentials: "same-origin" });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const e = new ApiError(data?.detail?.message ?? (typeof data?.detail === "string" ? data.detail : `Upload failed (${res.status})`));
+      e.issues = data?.detail?.issues ?? [];
+      throw e;
+    }
+    return data as VideoSummary;
+  },
+};

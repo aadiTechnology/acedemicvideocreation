@@ -12,15 +12,17 @@ from sqlalchemy import text
 from app import db as database
 from app.config import Settings, load_settings
 from app import oidc
-from app.routers import admin, lessons, structure, versions
+from app.engine_client import EngineClient
+from app.routers import admin, lessons, structure, versions, video
 
 logger = logging.getLogger("academic")
 
 
-def create_app(settings: Settings | None = None, oidc_http=None) -> FastAPI:
+def create_app(settings: Settings | None = None, oidc_http=None, engine_http=None) -> FastAPI:
     settings = settings or load_settings()
     app = FastAPI(title="Aadi Academic Video Creation", version="0.1.0")
     app.state.settings = settings
+    app.state.engine = EngineClient(settings, engine_http)
     if settings.database_url:
         database.init_db(settings.database_url)
 
@@ -61,7 +63,7 @@ def create_app(settings: Settings | None = None, oidc_http=None) -> FastAPI:
             logger.warning("OIDC sign-in is not configured: set SESSION_SECRET and the IDENTITY_* variables.")
         else:
             app.include_router(oidc.create_router(settings, oidc.OIDCClient(settings, oidc_http)))
-    for router in (*structure.routers, lessons.router, admin.router, versions.router):
+    for router in (*structure.routers, lessons.router, admin.router, versions.router, video.router):
         app.include_router(router, prefix="/api")
     return app
 

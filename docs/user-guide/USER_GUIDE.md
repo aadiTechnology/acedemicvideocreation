@@ -17,7 +17,7 @@ If you see "Product not available", your company has no Academic Video Creation 
 | Admin | Everything; gives roles to people. The first person of a company to sign in becomes its admin |
 | Content operator | Create lessons, import content, send for review |
 | Reviewer | Approve, request changes, reject |
-| Production operator | Generate videos (coming in the next release) |
+| Production operator | Generate videos |
 | No role | Read only |
 
 You only see your own company's data.
@@ -110,6 +110,29 @@ Rules for `lesson.csv`: UTF-8; exactly the columns `Slide, Module, voice_text, s
 
    ![History](img/20-history.png)
 
+## 6. Make the video
+
+Production operator, on an **approved** version, in step 5 **Make the video**.
+
+1. Choose the voice, the quality and subtitles, then click **Generate video**. Only one video at a time is made for each language version, and a repeated click never creates a second one.
+
+   ![Options](img/22-video-options.png)
+
+2. **Google Colab voice:** the video waits for narration audio. (1) Download the narration file, (2) open `notebooks/colab_tts.ipynb` in Colab (GPU), upload the file and run it; it produces `narration_audio.zip`, (3) choose that ZIP and click **Upload narration**. A ZIP with missing or extra files is rejected with the reason, and the video keeps waiting.
+
+   ![Waiting for audio](img/23-awaiting-audio.png)
+
+3. The video joins the queue, then a progress bar shows how far along it is. The page updates itself; you can leave and come back.
+
+   ![Queued](img/24-queued.png)
+   ![Progress](img/25-progress.png)
+
+4. When the status is **Ready**, the video plays on the page. Click **Download MP4**. The supporting files are listed below it. The file is checked (size and SHA-256) when it is copied from the video service, so a damaged file is never shown as ready.
+
+   ![Ready](img/26-ready.png)
+
+If something fails, the message says what happened. **Try again** is offered when it is safe; **Cancel** stops an unfinished video; **Make the video again** starts a new one after content changes.
+
 ## Videos for each part
 
 | Part | Video |
@@ -117,8 +140,8 @@ Rules for `lesson.csv`: UTF-8; exactly the columns `Slide, Module, voice_text, s
 | Sign in and roles | `docs/demos/sprint-4b-identity.mp4` |
 | Set up and create a lesson (sections 1 and 2) | `docs/demos/sprint-4-foundation.mp4` |
 | From content to approval (sections 3 to 5) | `docs/demos/sprint-5-import-review.mp4` |
+| Make the video (section 6) | `docs/demos/sprint-6-integration.mp4` |
 
-Generating the video, following its progress and downloading it are added with the next release.
 
 ## Rebuilding the screens and videos
 

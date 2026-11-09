@@ -7,7 +7,13 @@ Screens are written to docs/user-guide/img/. Each click target is outlined and n
 
 from __future__ import annotations
 
+import os
+import subprocess
+import tempfile
+import zipfile
 from pathlib import Path
+
+import imageio_ffmpeg
 
 from playwright.sync_api import Page, sync_playwright
 
@@ -52,6 +58,22 @@ def shot(page: Page, name: str, *targets) -> None:
     page.screenshot(path=str(IMG / f"{name}.png"))
     unmark(page)
     print("captured", name)
+
+
+ENGINE_DB = os.environ.get("ENGINE_WORKER_DB", "postgresql://postgres:postgres@host.docker.internal:15441/engine_docker")
+
+
+def narration_zip(slides: int) -> Path:
+    """What the Colab notebook would produce: NN.mp3 per slide. Silent here, so the guide needs no voice model."""
+    tmp = Path(tempfile.mkdtemp())
+    mp3 = tmp / "a.mp3"
+    subprocess.run([imageio_ffmpeg.get_ffmpeg_exe(), "-y", "-f", "lavfi", "-i", "anullsrc=r=24000:cl=mono", "-t", "6", "-q:a", "9", str(mp3)],
+                   check=True, capture_output=True)
+    out = tmp / "narration_audio.zip"
+    with zipfile.ZipFile(out, "w") as zf:
+        for n in range(1, slides + 1):
+            zf.write(mp3, f"{n:02d}.mp3")
+    return out
 
 
 def main() -> None:
@@ -146,6 +168,31 @@ def main() -> None:
         page.evaluate("window.scrollTo(0, 0)")
         shot(page, "19-approved", page.locator(".chip.approved").first)
         shot(page, "20-history", page.get_by_role("heading", name="History"))
+
+        # ---- 5. Make the video (real Video Engine: API container, then a real worker container) ----------------
+        video_h = page.get_by_role("heading", name="5. Make the video")
+        voice = page.locator("label", has_text="Voice").locator("select")
+        quality = page.locator("label", has_text="Quality").locator("select")
+        shot(page, "22-video-options", voice, quality, page.get_by_label("Subtitles"), page.get_by_role("button", name="Generate video"))
+        quality.select_option(value="720p24")
+        page.get_by_role("button", name="Generate video").click()
+        page.wait_for_selector("text=Waiting for narration audio")
+        shot(page, "23-awaiting-audio", page.get_by_role("link", name="Download the narration file"), page.locator("input[type=file][accept='.zip']"),
+             page.get_by_role("button", name="Upload narration"))
+        page.locator("input[type=file][accept='.zip']").set_input_files(str(narration_zip(5)))
+        page.get_by_role("button", name="Upload narration").click()
+        page.wait_for_selector("text=Waiting in the queue")
+        shot(page, "24-queued", page.get_by_text("Waiting in the queue"))
+        worker = subprocess.Popen(["docker", "run", "--rm", "-v", "engine-test-data:/data", "-e", f"ENGINE_DATABASE_URL={ENGINE_DB}",
+                                   "aadi-video-engine:test", "python", "-m", "engine.worker", "--once"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        page.wait_for_selector("text=/Making the video|Preparing narration/", timeout=60000)
+        shot(page, "25-progress", page.get_by_label("Progress"))
+        page.wait_for_selector("text=Ready", timeout=180000)
+        worker.wait(timeout=60)
+        page.wait_for_selector("video")
+        page.wait_for_timeout(1500)
+        shot(page, "26-ready", page.locator("video"), page.get_by_role("link", name="Download MP4"))
+        page.evaluate("window.scrollTo(0, 0)")
         page.evaluate("window.scrollTo(0, 0)")
         shot(page, "21-all-languages", page.locator("tr.pick").first)
         browser.close()

@@ -115,6 +115,50 @@ class LessonVersion(Tenanted, Base):
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
+ACTIVE_JOB_STATES = ("submitting", "queued", "validating", "awaiting_audio", "generating_audio", "rendering", "finalizing")
+TERMINAL_JOB_STATES = ("succeeded", "failed", "cancelled")
+
+
+class VideoJob(Tenanted, Base):
+    """One request to the Video Engine for an approved language version. engine_job_id links to the engine's job."""
+
+    __tablename__ = "video_jobs"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "idempotency_key", name="uq_video_job_idem"),
+        Index("ix_video_jobs_version", "version_id", "created_at"),
+    )
+    version_id: Mapped[str] = mapped_column(ForeignKey("lesson_versions.id", ondelete="RESTRICT"))
+    engine_job_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    idempotency_key: Mapped[str] = mapped_column(String(128))
+    package_sha256: Mapped[str] = mapped_column(String(64))
+    settings: Mapped[dict] = mapped_column(JSON, default=dict)
+    state: Mapped[str] = mapped_column(String(24), default="submitting")
+    stage: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    percent: Mapped[int] = mapped_column(Integer, default=0)
+    error_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    retryable: Mapped[bool] = mapped_column(default=False)
+    created_by: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class VideoAsset(Tenanted, Base):
+    """An output of a job. The file is copied into Academic storage, so downloads do not depend on engine retention."""
+
+    __tablename__ = "video_assets"
+    job_id: Mapped[str] = mapped_column(ForeignKey("video_jobs.id", ondelete="CASCADE"), index=True)
+    version_id: Mapped[str] = mapped_column(String(36), index=True)
+    engine_asset_id: Mapped[str] = mapped_column(String(36))
+    kind: Mapped[str] = mapped_column(String(32))
+    filename: Mapped[str] = mapped_column(String(200))
+    content_type: Mapped[str] = mapped_column(String(100))
+    size_bytes: Mapped[int] = mapped_column(Integer)
+    sha256: Mapped[str] = mapped_column(String(64))
+    local_path: Mapped[str] = mapped_column(String(300))
+    meta: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
 class ReviewEvent(Tenanted, Base):
     """History of review status changes. Approval is separate from video completion."""
 
