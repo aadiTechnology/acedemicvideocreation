@@ -113,6 +113,34 @@ BULLETS = {
     ],
 }
 
+def _eq(a, b, c, d, note):
+    return {"layout": "equation", "diagram": {"terms": [a, "+", b, "→", c, "+", d], "note": note}}
+
+
+def _flow(steps, roles=None):
+    return {"layout": "flow", "diagram": {"steps": [{"label": x, **({"role": roles[i]} if roles and roles[i] else {})} for i, x in enumerate(steps)]}}
+
+
+def _cmp(lt, lp, rt, rp):
+    return {"layout": "compare", "diagram": {"left": {"title": lt, "points": lp}, "right": {"title": rt, "points": rp}}}
+
+
+# animated layouts for selected slides (slide number -> layout and diagram); other slides show their bullets one by one
+LAYOUT_SLIDES = {
+    "en-IN": {2: _cmp("Autotrophs", ["Make their own food", "Green plants"], "Heterotrophs", ["Depend on others", "Animals and humans"]),
+              6: _eq("Carbon dioxide", "Water", "Glucose", "Oxygen", "in sunlight, with chlorophyll"),
+              8: _flow(["Boil the leaf in alcohol", "Add iodine solution", "Blue-black means starch"]),
+              10: _flow(["Sunlight, water, carbon dioxide", "Chlorophyll in the leaf", "Glucose and oxygen"], ["input", None, "output"])},
+    "hi-IN": {2: _cmp("स्वपोषी", ["अपना भोजन खुद बनाते हैं", "हरे पौधे"], "परपोषी", ["दूसरों पर निर्भर", "जानवर और मनुष्य"]),
+              6: _eq("कार्बन डाइऑक्साइड", "पानी", "ग्लूकोज", "ऑक्सीजन", "सूर्य के प्रकाश में, क्लोरोफिल की मदद से"),
+              8: _flow(["पत्ती को अल्कोहल में उबालें", "आयोडीन का घोल डालें", "नीली-काली = स्टार्च"]),
+              10: _flow(["प्रकाश, पानी, कार्बन डाइऑक्साइड", "पत्ती में क्लोरोफिल", "ग्लूकोज और ऑक्सीजन"], ["input", None, "output"])},
+    "mr-IN": {2: _cmp("स्वयंपोषी", ["स्वतः अन्न बनवतात", "हिरव्या वनस्पती"], "परपोषी", ["इतरांवर अवलंबून", "प्राणी आणि माणसे"]),
+              6: _eq("कार्बन डायऑक्साइड", "पाणी", "ग्लुकोज", "ऑक्सिजन", "सूर्यप्रकाश आणि क्लोरोफिलच्या मदतीने"),
+              8: _flow(["पान अल्कोहोलमध्ये उकळा", "आयोडीनचे द्रावण टाका", "निळसर काळे = स्टार्च"]),
+              10: _flow(["सूर्यप्रकाश, पाणी, कार्बन डायऑक्साइड", "पानातील क्लोरोफिल", "ग्लुकोज आणि ऑक्सिजन"], ["input", None, "output"])},
+}
+
 QUIZ = {
     "en-IN": [{"question": "Which pigment in a leaf captures sunlight?", "options": ["Chlorophyll", "Starch", "Glucose"], "answer": "Chlorophyll"},
               {"question": "Name the two products of photosynthesis.", "answer": "Glucose and oxygen"}],
@@ -132,7 +160,7 @@ for lang, d in DATA.items():
             w.writerow([i, module, voice, voice, VISUAL[i - 1]])  # captions are timed from subtitle_text: use the narration text
     plan = {"title": d["title"], "language": lang, "learning_objectives": d["objectives"],
             "source_references": ["Class 7 Science, Chapter 1: Nutrition in Plants (draft; to be checked against the prescribed textbook)"],
-            "slides": [{"slide": i, "headline": r[2].rstrip("."), "bullets": BULLETS[lang][i - 1]} for i, r in enumerate(d["rows"], 1)],
+            "slides": [{"slide": i, "headline": r[2].rstrip("."), "bullets": BULLETS[lang][i - 1], **LAYOUT_SLIDES[lang].get(i, {})} for i, r in enumerate(d["rows"], 1)],
             "quiz": QUIZ[lang]}
     (folder / "lesson_plan.json").write_text(json.dumps(plan, ensure_ascii=False, indent=2), encoding="utf-8")
     words = sum(len(r[1].split()) for r in d["rows"])

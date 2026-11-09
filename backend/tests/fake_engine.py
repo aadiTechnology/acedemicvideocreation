@@ -1,4 +1,4 @@
-"""A fake Video Engine that follows contract 1.1, served through httpx.MockTransport. Used to test the Academic integration."""
+"""A fake Video Engine that follows contract 1.2, served through httpx.MockTransport. Used to test the Academic integration."""
 
 from __future__ import annotations
 
@@ -60,7 +60,7 @@ class FakeEngine:
             return self._err(401, "unauthorized", "Missing or invalid engine key.")
         path, method = request.url.path, request.method
         if path == "/api/v1/capabilities":
-            return httpx.Response(200, json={"contract_version": "1.1", "languages": ["en-IN", "hi-IN", "mr-IN"], "output_profiles": ["1080p24", "720p24"],
+            return httpx.Response(200, json={"contract_version": "1.2", "languages": ["en-IN", "hi-IN", "mr-IN"], "output_profiles": ["1080p24", "720p24"],
                                              "providers": [{"name": "azure", "modes": ["api"], "configured": False, "voices": {}},
                                                            {"name": "colab", "modes": ["manual", "tunnel"], "configured": True, "voices": {"en-IN": ["default"]}}],
                                              "features": {"slide_renderer": True}, "limits": {}})

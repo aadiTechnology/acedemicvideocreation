@@ -17,6 +17,7 @@ export default function VideoPanel({ versionId, approved, me }: { versionId: str
   const [provider, setProvider] = useState("colab");
   const [profile, setProfile] = useState("1080p24");
   const [subtitles, setSubtitles] = useState(true);
+  const [style, setStyle] = useState("animated");
   const [audio, setAudio] = useState<File | null>(null);
   const can = me.roles.includes("admin") || me.roles.includes("production_operator");
 
@@ -54,6 +55,11 @@ export default function VideoPanel({ versionId, approved, me }: { versionId: str
               <option value="azure" disabled={azure ? !azure.configured : false}>Azure voice{azure && !azure.configured ? " (not set up)" : ""}</option>
             </select>
           </label>
+          <label>Slides
+            <select value={style} onChange={(e) => setStyle(e.target.value)}>
+              <option value="animated">Animated (recommended)</option><option value="plain">Plain</option>
+            </select>
+          </label>
           <label>Quality
             <select value={profile} onChange={(e) => setProfile(e.target.value)}>
               <option value="1080p24">Full HD (1080p)</option><option value="720p24">HD (720p)</option>
@@ -62,7 +68,7 @@ export default function VideoPanel({ versionId, approved, me }: { versionId: str
           <label style={{ gridAutoFlow: "column", alignItems: "center", display: "inline-flex", gap: 6 }}>
             <input type="checkbox" style={{ minWidth: 0 }} checked={subtitles} onChange={(e) => setSubtitles(e.target.checked)} />Subtitles
           </label>
-          <button className="primary" disabled={busy || !(s?.can_generate ?? true)} onClick={() => run(() => video.generate(versionId, { provider, profile, subtitles, rerender: job?.state === "succeeded" }))}>
+          <button className="primary" disabled={busy || !(s?.can_generate ?? true)} onClick={() => run(() => video.generate(versionId, { provider, profile, subtitles, style, rerender: job?.state === "succeeded" }))}>
             {job?.state === "succeeded" ? "Make the video again" : "Generate video"}
           </button>
         </div>
@@ -73,7 +79,7 @@ export default function VideoPanel({ versionId, approved, me }: { versionId: str
       {job && (
         <div className="card" style={{ marginTop: 12 }}>
           <p><span className={`chip ${job.state === "succeeded" ? "approved" : job.state === "failed" ? "changes_required" : "in_review"}`}>{STATE_TEXT[job.state] ?? job.state}</span>
-            {" "}<span className="muted">{job.settings.provider === "colab" ? "Colab voice" : "Azure voice"}, {job.settings.profile === "1080p24" ? "Full HD" : "HD"}</span></p>
+            {" "}<span className="muted">{job.settings.provider === "colab" ? "Colab voice" : "Azure voice"}, {job.settings.profile === "1080p24" ? "Full HD" : "HD"}, {job.settings.style === "animated" ? "animated slides" : "plain slides"}</span></p>
           {active && job.state !== "awaiting_audio" && (
             <div aria-label="Progress" style={{ background: "var(--line)", borderRadius: 6, height: 12, maxWidth: 480 }}>
               <div style={{ width: `${Math.max(4, job.percent)}%`, height: 12, borderRadius: 6, background: "var(--accent)" }} />

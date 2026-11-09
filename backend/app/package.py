@@ -170,6 +170,38 @@ def _parse_csv(raw: bytes, issues: list[Issue], assets: set[str]) -> list[dict]:
     return slides
 
 
+LAYOUTS = ("bullets", "flow", "equation", "cycle", "compare")
+
+
+def _texts(value, low: int, high: int) -> bool:
+    items = [(v.get("label") if isinstance(v, dict) else v) for v in value] if isinstance(value, list) else None
+    return items is not None and low <= len(items) <= high and all(isinstance(x, str) and x.strip() and len(x) <= 60 for x in items)
+
+
+def _diagram_problem(item: dict) -> str | None:
+    """Check the optional animation layout of one slide. Returns a plain-words problem, or None."""
+    layout = item.get("layout", "bullets")
+    if layout not in LAYOUTS:
+        return f"layout must be one of {', '.join(LAYOUTS)}."
+    diagram = item.get("diagram")
+    if layout == "bullets":
+        return None
+    if not isinstance(diagram, dict):
+        return f"layout {layout} needs a diagram object."
+    if layout == "flow" and not _texts(diagram.get("steps"), 2, 5):
+        return "flow needs diagram.steps: 2 to 5 short labels."
+    if layout == "equation" and not _texts(diagram.get("terms"), 3, 9):
+        return "equation needs diagram.terms: 3 to 9 items, for example [\"Carbon dioxide\", \"+\", \"Water\", \"→\", \"Glucose\"]."
+    if layout == "cycle" and not _texts(diagram.get("nodes"), 3, 6):
+        return "cycle needs diagram.nodes: 3 to 6 short labels."
+    if layout == "compare":
+        for side in ("left", "right"):
+            part = diagram.get(side)
+            if not (isinstance(part, dict) and isinstance(part.get("title"), str) and part["title"].strip() and _texts(part.get("points"), 1, 4)):
+                return f"compare needs diagram.{side} with a title and 1 to 4 points."
+    return None
+
+
 def _parse_plan(raw: bytes, language: str, issues: list[Issue], name: str = "lesson_plan.json") -> dict | None:
     try:
         plan = json.loads(raw.decode("utf-8-sig"))
@@ -200,6 +232,10 @@ def _parse_plan(raw: bytes, language: str, issues: list[Issue], name: str = "les
                     issues.append(_err("plan_slides", f"{name}: slides item {i} needs a whole-number slide, a headline and a list of bullet texts."))
                 elif len(item.get("bullets", [])) > 5 or any(len(b) > 140 for b in item.get("bullets", [])) or len(item["headline"]) > 100:
                     issues.append(_err("plan_slides", f"{name}: slides item {i} is too long (headline up to 100 characters, at most 5 bullets of up to 140)."))
+                else:
+                    problem = _diagram_problem(item)
+                    if problem:
+                        issues.append(_err("plan_diagram", f"{name}: slides item {i} (slide {item['slide']}): {problem}"))
     return plan
 
 

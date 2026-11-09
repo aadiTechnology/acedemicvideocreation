@@ -178,6 +178,12 @@ OUTPUT: produce these files and nothing else.
      "slides": [{{"slide": 1, "headline": "3 to 6 words, the slide title", "bullets": ["2 to 4 short key points, 3 to 8 words each"]}}],
      "quiz": [{{"question": "...", "options": ["...", "..."], "answer": "..."}}]}}
    Give one "slides" entry for every slide. This short wording is what appears on the slide; the narration appears as captions.
+   The video is animated: items appear one by one as the narrator reaches them. Add a "layout" to a slide when a picture explains it better than bullets:
+   - "flow": {{"layout": "flow", "diagram": {{"steps": [{{"label": "Sunlight"}}, {{"label": "Water"}}, {{"label": "Glucose", "role": "output"}}]}}}}   (2 to 5 steps, arrows are drawn between them)
+   - "equation": {{"layout": "equation", "diagram": {{"terms": ["Carbon dioxide", "+", "Water", "→", "Glucose", "+", "Oxygen"], "note": "in sunlight"}}}}
+   - "cycle": {{"layout": "cycle", "diagram": {{"nodes": ["Evaporation", "Condensation", "Precipitation", "Collection"]}}}}   (3 to 6 nodes in a loop)
+   - "compare": {{"layout": "compare", "diagram": {{"left": {{"title": "A", "points": ["..."]}}, "right": {{"title": "B", "points": ["..."]}}}}}}
+   Without a layout, the bullets are shown one by one. Keep every label short (1 to 4 words) and in the lesson language. List the items in the order the narrator mentions them.
 
 RULES
 - Scientifically correct and appropriate for {klass.name}; no copyrighted textbook text copied word for word.

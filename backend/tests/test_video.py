@@ -73,8 +73,9 @@ def test_full_flow_submit_progress_copy_and_download(client, engine):
     assert r.status_code == 202 and r.json()["job"]["state"] == "queued" and r.json()["idempotent_replay"] is False
     jid = engine.only_job()
     m = engine.jobs[jid]["manifest"]
-    assert (m["contract_version"], m["caller"]["application_id"], m["caller"]["external_ref"], m["language"]) == ("1.1", "aadi-academic", vid, "en-IN")
+    assert (m["contract_version"], m["caller"]["application_id"], m["caller"]["external_ref"], m["language"]) == ("1.2", "aadi-academic", vid, "en-IN")
     assert (m["caller"]["tenant_ref"], m["render"]["profile"], m["render"]["subtitles"]["enabled"]) == ("dev-tenant", "720p24", False)
+    assert m["render"]["style"] == "animated"  # the default
     assert zipfile.ZipFile(io.BytesIO(engine.jobs[jid]["package"])).read("lesson.csv") == CSV  # the stored package, byte for byte
     assert all(h.get("x-engine-key") == FakeEngine.KEY and h.get("x-correlation-id") for h in engine.seen_headers)
 
@@ -91,6 +92,15 @@ def test_full_flow_submit_progress_copy_and_download(client, engine):
     assert hashlib.sha256(dl.content).hexdigest() == video["sha256"]
     assert client.get(f"/api/video-jobs/{s['job']['id']}/assets/{video['id']}").content == FakeEngine.VIDEO
     assert client.get(f"/api/lesson-versions/{vid}").json()["review_status"] == "approved"  # approval is independent of rendering
+
+
+def test_slide_style_is_chosen_validated_and_sent(client, engine):
+    vid = approved_version(client)
+    assert gen(client, vid, style="3d").status_code == 422
+    gen(client, vid, style="plain")
+    assert engine.jobs[engine.only_job()]["manifest"]["render"]["style"] == "plain"
+    job = client.get(f"/api/lesson-versions/{vid}/video").json()["job"]
+    assert job["settings"]["style"] == "plain"
 
 
 def test_duplicate_click_creates_one_job(client, engine):

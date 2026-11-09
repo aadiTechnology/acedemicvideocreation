@@ -27,7 +27,24 @@
         "Autotrophs make their own food",
         "Heterotrophs depend on others",
         "Our food comes from plants"
-      ]
+      ],
+      "layout": "compare",
+      "diagram": {
+        "left": {
+          "title": "Autotrophs",
+          "points": [
+            "Make their own food",
+            "Green plants"
+          ]
+        },
+        "right": {
+          "title": "Heterotrophs",
+          "points": [
+            "Depend on others",
+            "Animals and humans"
+          ]
+        }
+      }
     },
     {
       "slide": 3,
@@ -63,7 +80,20 @@
         "Chlorophyll captures light energy",
         "Water and carbon dioxide become glucose",
         "Oxygen is released"
-      ]
+      ],
+      "layout": "equation",
+      "diagram": {
+        "terms": [
+          "Carbon dioxide",
+          "+",
+          "Water",
+          "→",
+          "Glucose",
+          "+",
+          "Oxygen"
+        ],
+        "note": "in sunlight, with chlorophyll"
+      }
     },
     {
       "slide": 7,
@@ -81,7 +111,21 @@
         "Boil the leaf in alcohol",
         "Add iodine solution",
         "Blue-black means starch"
-      ]
+      ],
+      "layout": "flow",
+      "diagram": {
+        "steps": [
+          {
+            "label": "Boil the leaf in alcohol"
+          },
+          {
+            "label": "Add iodine solution"
+          },
+          {
+            "label": "Blue-black means starch"
+          }
+        ]
+      }
     },
     {
       "slide": 9,
@@ -99,7 +143,23 @@
         "Raw materials: sunlight, water, carbon dioxide",
         "Products: glucose and oxygen",
         "Extra glucose is stored as starch"
-      ]
+      ],
+      "layout": "flow",
+      "diagram": {
+        "steps": [
+          {
+            "label": "Sunlight, water, carbon dioxide",
+            "role": "input"
+          },
+          {
+            "label": "Chlorophyll in the leaf"
+          },
+          {
+            "label": "Glucose and oxygen",
+            "role": "output"
+          }
+        ]
+      }
     }
   ],
   "quiz": [

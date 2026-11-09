@@ -44,6 +44,7 @@ class GenerateIn(BaseModel):
     voice: str | None = None
     profile: str = "1080p24"
     subtitles: bool = True
+    style: str = "animated"  # animated slides (layouts, diagrams, highlighting) or plain
     rerender: bool = False
 
 
@@ -93,7 +94,7 @@ def _manifest(version: m.LessonVersion, user: CurrentUser, key: str, s: dict) ->
         "caller": {"application_id": APPLICATION_ID, "tenant_ref": user.tenant_id, "external_ref": version.id},
         "idempotency_key": key, "language": version.language,
         "tts": {"provider": s["provider"], "mode": s["mode"], **({"voice": s["voice"]} if s.get("voice") else {})},
-        "render": {"profile": s["profile"], "subtitles": {"enabled": s["subtitles"]}},
+        "render": {"profile": s["profile"], "style": s.get("style", "plain"), "subtitles": {"enabled": s["subtitles"]}},
     }
 
 
@@ -205,12 +206,14 @@ def generate(version_id: str, body: GenerateIn, request: Request, db: Session = 
         raise HTTPException(409, "Import the lesson content first.")
     if body.profile not in PROFILES:
         raise HTTPException(422, f"Unknown output profile. Use one of: {', '.join(PROFILES)}.")
+    if body.style not in ("animated", "plain"):
+        raise HTTPException(422, "Unknown slide style. Use animated or plain.")
     if body.provider not in ("colab", "azure"):
         raise HTTPException(422, "Unknown voice option. Use colab or azure.")
     mode = body.mode or ("manual" if body.provider == "colab" else "api")
     if (body.provider, mode) not in (("colab", "manual"), ("colab", "tunnel"), ("azure", "api")):
         raise HTTPException(422, "That voice option and mode do not go together.")
-    settings = {"provider": body.provider, "mode": mode, "voice": body.voice, "profile": body.profile, "subtitles": body.subtitles}
+    settings = {"provider": body.provider, "mode": mode, "voice": body.voice, "profile": body.profile, "subtitles": body.subtitles, "style": body.style}
     base = hashlib.sha256(json.dumps([version.id, version.package_sha256, settings], sort_keys=True).encode()).hexdigest()
     runs = db.scalar(select(func.count()).select_from(m.VideoJob).where(m.VideoJob.version_id == version.id, m.VideoJob.idempotency_key.like(f"lv-{base[:24]}-%"))) or 0
     key = f"lv-{base[:24]}-{runs if body.rerender else max(runs - 1, 0)}"

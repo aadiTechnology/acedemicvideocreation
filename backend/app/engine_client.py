@@ -11,7 +11,7 @@ import httpx
 
 from app.config import Settings
 
-CONTRACT_VERSION = "1.1"
+CONTRACT_VERSION = "1.2"
 APPLICATION_ID = "aadi-academic"
 
 

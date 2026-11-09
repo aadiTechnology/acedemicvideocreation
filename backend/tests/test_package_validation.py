@@ -184,3 +184,33 @@ def test_short_subtitles_warn_but_import():
     assert "short_subtitles" in [w.code for w in p.warnings]
     full = ["1", "Intro", "word " * 60, "word " * 55, "Show"]
     assert "short_subtitles" not in [w.code for w in ok([("lesson.csv", csv_bytes([full]))]).warnings]
+
+
+def _plan(slide):
+    return ("lesson_plan.json", json.dumps({"slides": [{"slide": 1, "headline": "H", **slide}]}).encode())
+
+
+def test_animation_layouts_are_validated():
+    base = [("lesson.csv", csv_bytes([ROW]))]
+    good = [
+        {"layout": "flow", "diagram": {"steps": [{"label": "Sunlight"}, "Water", {"label": "Glucose", "role": "output"}]}},
+        {"layout": "equation", "diagram": {"terms": ["Carbon dioxide", "+", "Water", "→", "Glucose"], "note": "in sunlight"}},
+        {"layout": "cycle", "diagram": {"nodes": ["Evaporation", "Condensation", "Precipitation"]}},
+        {"layout": "compare", "diagram": {"left": {"title": "A", "points": ["x"]}, "right": {"title": "B", "points": ["y", "z"]}}},
+        {"layout": "bullets", "bullets": ["a"]},
+    ]
+    for slide in good:
+        assert ok(base + [_plan(slide)]).lesson_plan["slides"][0]["headline"] == "H", slide
+    bad = [
+        {"layout": "spiral"},
+        {"layout": "flow"},
+        {"layout": "flow", "diagram": {"steps": ["only one"]}},
+        {"layout": "flow", "diagram": {"steps": ["a"] * 6}},
+        {"layout": "equation", "diagram": {"terms": ["a", "+"]}},
+        {"layout": "cycle", "diagram": {"nodes": ["a", "b"]}},
+        {"layout": "compare", "diagram": {"left": {"title": "A", "points": ["x"]}}},
+        {"layout": "compare", "diagram": {"left": {"title": "", "points": ["x"]}, "right": {"title": "B", "points": ["y"]}}},
+        {"layout": "flow", "diagram": {"steps": ["x" * 61, "b"]}},
+    ]
+    for slide in bad:
+        assert "plan_diagram" in codes(base + [_plan(slide)]), slide

@@ -81,7 +81,7 @@ export const versions = {
 
 export interface VideoJob {
   id: string; state: string; stage: string | null; percent: number; error_code: string | null; error_message: string | null;
-  retryable: boolean; awaiting_audio: boolean; settings: { provider: string; mode: string; profile: string; subtitles: boolean };
+  retryable: boolean; awaiting_audio: boolean; settings: { provider: string; mode: string; profile: string; subtitles: boolean; style?: string };
   created_at: string; finished_at: string | null;
 }
 export interface VideoAsset { id: string; kind: string; filename: string; size_bytes: number; duration_seconds?: number; width?: number; height?: number; fps?: number }
@@ -91,7 +91,7 @@ export interface VideoCaps { providers: { name: string; modes: string[]; configu
 export const video = {
   get: (versionId: string) => call<VideoSummary>("GET", `/lesson-versions/${versionId}/video`),
   caps: () => call<VideoCaps>("GET", "/video/capabilities"),
-  generate: (versionId: string, body: { provider: string; profile: string; subtitles: boolean; rerender?: boolean }) =>
+  generate: (versionId: string, body: { provider: string; profile: string; subtitles: boolean; style: string; rerender?: boolean }) =>
     call<VideoSummary>("POST", `/lesson-versions/${versionId}/video`, body),
   retry: (jobId: string) => call<VideoSummary>("POST", `/video-jobs/${jobId}/retry`, {}),
   cancel: (jobId: string) => call<VideoSummary>("POST", `/video-jobs/${jobId}/cancel`, {}),
