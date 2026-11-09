@@ -234,3 +234,31 @@ def test_illustration_layouts_are_validated():
     ]
     for slide in bad:
         assert "plan_diagram" in codes(base + [_plan(slide)]), slide
+
+
+def test_e4_layouts_are_validated():
+    base = [("lesson.csv", csv_bytes([ROW]))]
+    good = [
+        {"layout": "text_illustration", "bullets": ["Light slows in glass"], "diagram": {"template": "refraction"}},
+        {"layout": "timeline", "diagram": {"events": [{"label": "1621", "sub": "Snell"}, {"label": "1678"}, "1801"]}},
+        {"layout": "labelled_diagram", "diagram": {"shape": "rect", "title": "Cell", "parts": [{"label": "A", "x": 0.2, "y": 0.3}, {"label": "B", "x": 0.7, "y": 0.8}]}},
+        {"layout": "experiment", "diagram": {"aim": "To test", "materials": ["leaf"], "procedure": ["Boil it"], "observation": "Blue", "conclusion": "Starch"}},
+        {"layout": "experiment", "diagram": {"aim": "To test", "procedure": ["Boil it"]}},
+        {"layout": "recap", "bullets": ["one", "two"], "diagram": {"question": "Why?"}},
+        {"layout": "recap", "bullets": ["one", "two", "three"]},
+    ]
+    for slide in good:
+        assert ok(base + [_plan(slide)]).lesson_plan["slides"][0]["layout"] == slide["layout"], slide
+    bad = [
+        {"layout": "text_illustration", "diagram": {"template": "refraction"}},
+        {"layout": "text_illustration", "bullets": ["a"], "diagram": {"template": "volcano"}},
+        {"layout": "timeline", "diagram": {"events": ["a", "b"]}},
+        {"layout": "labelled_diagram", "diagram": {"parts": [{"label": "A", "x": 2, "y": 0.3}, {"label": "B", "x": 0.5, "y": 0.5}]}},
+        {"layout": "labelled_diagram", "diagram": {"shape": "star", "parts": [{"label": "A", "x": 0.2, "y": 0.3}, {"label": "B", "x": 0.7, "y": 0.8}]}},
+        {"layout": "experiment", "diagram": {"aim": "To test"}},
+        {"layout": "experiment", "diagram": {"aim": "", "procedure": ["x"]}},
+        {"layout": "recap", "bullets": ["only one"]},
+        {"layout": "recap", "bullets": ["a", "b"], "diagram": {"question": ""}},
+    ]
+    for slide in bad:
+        assert "plan_diagram" in codes(base + [_plan(slide)]), slide

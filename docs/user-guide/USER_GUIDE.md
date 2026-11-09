@@ -191,3 +191,17 @@ The ChatGPT prompt already knows them. A slide uses one like this in `lesson_pla
 ## Rebuilding the screens and videos
 
 Start the API (`AUTH_MODE=dev`) and web app on a fresh database, then run `docs/user-guide/capture_guide.py` and `capture_signin.py` (Playwright with Edge). Videos are built with `ScriptToVideo/docs/demos/build_demo.py` from `docs/demos/sprint-*.json`.
+
+## 9. More layouts (new)
+
+Five more slide layouts can be used in `lesson_plan.json` `slides`. The ChatGPT prompt already explains them and tells ChatGPT to choose the one that fits each slide. Hindi and Marathi section headings (Aim, Procedure, Recap and so on) are unreviewed translations.
+
+| Layout | Use it for | Key fields |
+|---|---|---|
+| `text_illustration` | points on the left, a built-in picture building up on the right | `bullets` (1 to 5), `diagram.template` |
+| `timeline` | events in time order | `diagram.events`: 3 to 6 items with `label` (for example a year) and optional `sub` |
+| `labelled_diagram` | naming the parts of a simple outline | `diagram.parts`: 2 to 8 items with `label`, `x`, `y` (0 to 1); `shape` oval, rect or circle |
+| `experiment` | a real-world activity | `diagram.aim`, `procedure` (1 to 4 steps); optional `materials`, `observation`, `conclusion` |
+| `recap` | the closing summary | `bullets` (2 to 5); optional `diagram.question` |
+
+Layout choice: the video engine can recommend layouts (`POST /api/v1/layouts/recommend`: subject, topic, objective, class); the ChatGPT prompt gives the same guidance in words. A person always decides.

@@ -170,7 +170,8 @@ def _parse_csv(raw: bytes, issues: list[Issue], assets: set[str]) -> list[dict]:
     return slides
 
 
-LAYOUTS = ("bullets", "flow", "equation", "cycle", "compare", "illustration")
+LAYOUTS = ("bullets", "flow", "equation", "cycle", "compare", "illustration",
+           "text_illustration", "timeline", "labelled_diagram", "experiment", "recap")
 ILLUSTRATIONS = ("refraction", "photosynthesis", "water_cycle", "leaf_section")
 
 
@@ -188,7 +189,10 @@ def _diagram_problem(item: dict) -> str | None:
     if layout == "bullets":
         return None
     if not isinstance(diagram, dict):
-        return f"layout {layout} needs a diagram object."
+        if layout == "recap" and diagram is None:
+            diagram = {}
+        else:
+            return f"layout {layout} needs a diagram object."
     if layout == "flow" and not _texts(diagram.get("steps"), 2, 5):
         return "flow needs diagram.steps: 2 to 5 short labels."
     if layout == "equation" and not _texts(diagram.get("terms"), 3, 9):
@@ -206,6 +210,34 @@ def _diagram_problem(item: dict) -> str | None:
         if "angle" in params and not (isinstance(params["angle"], (int, float)) and 10 <= params["angle"] <= 75):
             return "refraction params: angle is a number between 10 and 75 degrees."
         return None
+    if layout == "text_illustration":
+        if diagram.get("template") not in ILLUSTRATIONS:
+            return f"text_illustration needs diagram.template, one of: {', '.join(ILLUSTRATIONS)}."
+        if not _texts(item.get("bullets"), 1, 5):
+            return "text_illustration needs 1 to 5 short bullets next to the picture."
+    if layout == "timeline":
+        events = diagram.get("events")
+        if not (_texts(events, 3, 6) and all(len(str(e.get("sub", ""))) <= 60 for e in events if isinstance(e, dict))):
+            return "timeline needs diagram.events: 3 to 6 items, each with a short label (for example a year) and an optional short sub text."
+    if layout == "labelled_diagram":
+        parts = diagram.get("parts")
+        ok = isinstance(parts, list) and 2 <= len(parts) <= 8 and all(
+            isinstance(p, dict) and isinstance(p.get("label"), str) and p["label"].strip() and len(p["label"]) <= 60
+            and all(isinstance(p.get(c), (int, float)) and 0 <= p[c] <= 1 for c in ("x", "y")) for p in parts)
+        if not ok:
+            return "labelled_diagram needs diagram.parts: 2 to 8 items, each with a label and x, y between 0 and 1."
+        if diagram.get("shape", "oval") not in ("oval", "rect", "circle"):
+            return "labelled_diagram shape is oval, rect or circle."
+    if layout == "experiment":
+        if not (isinstance(diagram.get("aim"), str) and diagram["aim"].strip() and _texts(diagram.get("procedure"), 1, 4)):
+            return "experiment needs diagram.aim and diagram.procedure (1 to 4 short steps); materials, observation and conclusion are optional."
+        if "materials" in diagram and not _texts(diagram["materials"], 1, 6):
+            return "experiment materials: 1 to 6 short items."
+    if layout == "recap":
+        if not _texts(item.get("bullets"), 2, 5):
+            return "recap needs 2 to 5 short bullets (the key points)."
+        if "question" in diagram and not (isinstance(diagram["question"], str) and 0 < len(diagram["question"]) <= 120):
+            return "recap question must be a short text."
     if layout == "compare":
         for side in ("left", "right"):
             part = diagram.get(side)

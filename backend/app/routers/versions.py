@@ -192,6 +192,13 @@ OUTPUT: produce these files and nothing else.
        water_cycle (5): the sun heating the sea; evaporation; condensation (clouds); precipitation; collection (flowing back to the sea).
        leaf_section (6): upper epidermis; palisade cells; spongy cells; lower epidermis; stomata and guard cells; chloroplasts.
      The picture and its labels are drawn for you in the lesson language. Do not describe the drawing in the visual_instruction beyond naming the template.
+   - "text_illustration": 1 to 5 bullets on the left and a built-in picture (same templates as "illustration") building up on the right as the bullets are spoken:
+       {{"layout": "text_illustration", "bullets": ["..."], "diagram": {{"template": "refraction"}}}}
+   - "timeline": events in time order, 3 to 6: {{"layout": "timeline", "diagram": {{"events": [{{"label": "1621", "sub": "Snell finds the law"}}, ...]}}}}
+   - "labelled_diagram": a simple outline with labelled parts: {{"layout": "labelled_diagram", "diagram": {{"shape": "oval", "title": "Animal cell", "parts": [{{"label": "Nucleus", "x": 0.5, "y": 0.45}}, ...]}}}}   (shape oval, rect or circle; x and y are positions inside the shape, 0 to 1; 2 to 8 parts)
+   - "experiment": a real-world activity: {{"layout": "experiment", "diagram": {{"aim": "...", "materials": ["..."], "procedure": ["1 to 4 short steps"], "observation": "...", "conclusion": "..."}}}}
+   - "recap": the closing summary slide, 2 to 5 key points in "bullets" and an optional question: {{"layout": "recap", "bullets": ["..."], "diagram": {{"question": "..."}}}}
+   Choose the layout that fits the content: a process or steps -> flow; two things compared -> compare; a repeating loop -> cycle; a formula or reaction -> equation; events over time -> timeline; naming the parts of something -> labelled_diagram; an activity or experiment -> experiment; a closing summary -> recap; otherwise bullets. Do not use the same layout for every slide.
    Without a layout, the bullets are shown one by one. Keep every label short (1 to 4 words) and in the lesson language. List the items in the order the narrator mentions them.
 
 RULES
