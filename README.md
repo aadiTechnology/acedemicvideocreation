@@ -6,7 +6,11 @@ Docs: `docs/PRD_Aadi_Academic_Video_Creation_MVP.md`, `docs/architecture/ACADEMI
 
 ## Status
 
-Sprint 4 (foundation): classes, subjects, chapters, topics, lessons and language versions (English, Hindi, Marathi), tenant-scoped, with UUID ids. Import, review, video generation and Identity sign-in follow (see the plan).
+Done: lessons structure and language versions, sign-in through Aadi Identity with roles, package import and validation, academic review (Sprints 4 to 5). Next: video generation through the Video Engine, POC videos, Coolify deployment (see the plan).
+
+## User guide
+
+How to use the application, step by step with screens: `docs/user-guide/USER_GUIDE.md` (and a matching video for each part, see that file).
 
 ## Local setup
 

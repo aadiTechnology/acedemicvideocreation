@@ -1,0 +1,7 @@
+{
+  "title": "How plants make food",
+  "language": "en-IN",
+  "learning_objectives": ["Explain photosynthesis", "Name the raw materials and the products"],
+  "source_references": ["Class 7 Science, Chapter 1, Nutrition in Plants"],
+  "quiz": [{"question": "Which pigment captures sunlight in a leaf?", "options": ["Chlorophyll", "Starch", "Glucose"], "answer": "Chlorophyll"}]
+}
