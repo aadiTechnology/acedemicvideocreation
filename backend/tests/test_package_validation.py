@@ -166,3 +166,21 @@ def test_field_and_slide_count_limits(monkeypatch):
 def test_duration_warning_is_not_an_error():
     p = ok([("lesson.csv", csv_bytes([["1", "m", "word " * 600, "s", "v"]]))])
     assert "duration" in [w.code for w in p.warnings] and p.estimated_minutes > 4
+
+
+def test_plan_slides_are_validated():
+    base = [("lesson.csv", csv_bytes([ROW]))]
+    assert "plan_slides" in codes(base + [("lesson_plan.json", b'{"slides": "x"}')])
+    assert "plan_slides" in codes(base + [("lesson_plan.json", b'{"slides": [{"slide": 1}]}')])
+    assert "plan_slides" in codes(base + [("lesson_plan.json", json.dumps({"slides": [{"slide": 1, "headline": "H", "bullets": ["b"] * 6}]}).encode())])
+    assert "plan_slides" in codes(base + [("lesson_plan.json", json.dumps({"slides": [{"slide": 9, "headline": "H", "bullets": []}]}).encode())])
+    good = json.dumps({"slides": [{"slide": 1, "headline": "Plants make food", "bullets": ["Sunlight", "Water"]}]}).encode()
+    assert ok(base + [("lesson_plan.json", good)]).lesson_plan["slides"][0]["headline"] == "Plants make food"
+
+
+def test_short_subtitles_warn_but_import():
+    short = ["1", "Intro", "word " * 60, "Short", "Show"]
+    p = ok([("lesson.csv", csv_bytes([short]))])
+    assert "short_subtitles" in [w.code for w in p.warnings]
+    full = ["1", "Intro", "word " * 60, "word " * 55, "Show"]
+    assert "short_subtitles" not in [w.code for w in ok([("lesson.csv", csv_bytes([full]))]).warnings]

@@ -1,0 +1,58 @@
+{
+  "en-IN": {
+    "duration_s": 242.11,
+    "video_codec": "h264",
+    "resolution": "1920x1080",
+    "fps": 24.0,
+    "has_audio": true,
+    "decode_errors": [],
+    "size_mb": 5.68,
+    "sha256": "b5d48685355eb03caf6f26d9bb5515b383dc5749d77dece75448323dc5a1ef41",
+    "language": "English",
+    "slides": 10,
+    "narration_total_s": 242.2,
+    "job_id": "223475df-7eef-4add-bb93-50011baf8e29",
+    "version_id": "c7cc61b7-447e-47f6-a664-e7cd9a2d4c8a",
+    "narration": "Windows voice (Zira), test voice",
+    "warnings": []
+  },
+  "hi-IN": {
+    "duration_s": 247.9,
+    "video_codec": "h264",
+    "resolution": "1920x1080",
+    "fps": 24.0,
+    "has_audio": true,
+    "decode_errors": [],
+    "size_mb": 1.21,
+    "sha256": "605203e3941ade1e337da71dd9b228381af59350065647f2f16a3332d7fbe571",
+    "language": "Hindi",
+    "slides": 10,
+    "narration_total_s": 247.9,
+    "job_id": "a3bea39b-5dbc-471d-9390-48e96c6c3d40",
+    "version_id": "3f9c4e61-bfd0-44d4-ac6d-fcf25f4b808e",
+    "narration": "SILENT PLACEHOLDER (no local voice)",
+    "warnings": []
+  },
+  "mr-IN": {
+    "duration_s": 244.86,
+    "video_codec": "h264",
+    "resolution": "1920x1080",
+    "fps": 24.0,
+    "has_audio": true,
+    "decode_errors": [],
+    "size_mb": 1.21,
+    "sha256": "530f29024cb7954206989c66d6910bef3e75e1726051645269ee6b1bdcf3f941",
+    "language": "Marathi",
+    "slides": 10,
+    "narration_total_s": 244.8,
+    "job_id": "f12129d1-2591-4489-a83f-a4b74adc5717",
+    "version_id": "81ad89e4-78d8-4499-bcca-0f6d03ac34a3",
+    "narration": "SILENT PLACEHOLDER (no local voice)",
+    "warnings": []
+  },
+  "reproducibility_english": {
+    "video_frames_identical": true,
+    "audio_identical": true,
+    "file_bytes_identical": true
+  }
+}

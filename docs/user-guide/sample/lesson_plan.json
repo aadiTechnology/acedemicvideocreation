@@ -1,7 +1,62 @@
 {
   "title": "How plants make food",
   "language": "en-IN",
-  "learning_objectives": ["Explain photosynthesis", "Name the raw materials and the products"],
-  "source_references": ["Class 7 Science, Chapter 1, Nutrition in Plants"],
-  "quiz": [{"question": "Which pigment captures sunlight in a leaf?", "options": ["Chlorophyll", "Starch", "Glucose"], "answer": "Chlorophyll"}]
+  "learning_objectives": [
+    "Explain photosynthesis",
+    "Name the raw materials and the products"
+  ],
+  "source_references": [
+    "Class 7 Science, Chapter 1, Nutrition in Plants"
+  ],
+  "quiz": [
+    {
+      "question": "Which pigment captures sunlight in a leaf?",
+      "options": [
+        "Chlorophyll",
+        "Starch",
+        "Glucose"
+      ],
+      "answer": "Chlorophyll"
+    }
+  ],
+  "slides": [
+    {
+      "slide": 1,
+      "headline": "Plants make their own food",
+      "bullets": [
+        "Photosynthesis happens in green leaves"
+      ]
+    },
+    {
+      "slide": 2,
+      "headline": "Three raw materials",
+      "bullets": [
+        "Sunlight",
+        "Water",
+        "Carbon dioxide"
+      ]
+    },
+    {
+      "slide": 3,
+      "headline": "Chlorophyll",
+      "bullets": [
+        "Captures the energy of sunlight"
+      ]
+    },
+    {
+      "slide": 4,
+      "headline": "The food plants make",
+      "bullets": [
+        "Glucose gives energy",
+        "Extra is stored as starch"
+      ]
+    },
+    {
+      "slide": 5,
+      "headline": "Summary",
+      "bullets": [
+        "Plants make glucose and oxygen"
+      ]
+    }
+  ]
 }

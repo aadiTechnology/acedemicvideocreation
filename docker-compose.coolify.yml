@@ -1,0 +1,47 @@
+# Academic Video Creation for Coolify: web (nginx + the built app) and API. Separate from the Video Engine deployment.
+# Public: only academic-web, on https://academics.aaditechnology.com. The API is reached through the web container's /api and /auth.
+# Prerequisites: the external network "aadi-data" exists (created by the Identity stack), the aadi_academic database and roles exist,
+# the product "academics" and client "academics-web" are registered in Identity, and the Video Engine is deployed.
+services:
+  academic-api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - APP_ENV=production
+      - APP_BASE_URL=${APP_BASE_URL:-https://academics.aaditechnology.com}
+      - AUTH_MODE=oidc
+      - DATABASE_URL=${DATABASE_URL}
+      - MIGRATION_DATABASE_URL=${MIGRATION_DATABASE_URL}
+      - SESSION_SECRET=${SESSION_SECRET}
+      - IDENTITY_ISSUER_URL=${IDENTITY_ISSUER_URL:-https://id.aadiprojecttracker.aaditechnology.com}
+      - IDENTITY_CLIENT_ID=${IDENTITY_CLIENT_ID:-academics-web}
+      - IDENTITY_CLIENT_SECRET=${IDENTITY_CLIENT_SECRET}
+      - IDENTITY_PRODUCT_KEY=academics
+      - VIDEO_ENGINE_URL=${VIDEO_ENGINE_URL:-http://aadi-engine-api:8000}
+      - VIDEO_ENGINE_API_KEY=${VIDEO_ENGINE_API_KEY}
+      - VIDEO_ENGINE_TIMEOUT_SECONDS=${VIDEO_ENGINE_TIMEOUT_SECONDS:-30}
+      - STORAGE_LOCAL_DIR=/data
+    volumes:
+      - academic_storage:/data
+    networks:
+      - default
+      - aadi-data
+    restart: unless-stopped
+  academic-web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    environment:
+      - SERVICE_FQDN_ACADEMIC_WEB_80
+    depends_on:
+      academic-api:
+        condition: service_healthy
+    networks:
+      - default
+    restart: unless-stopped
+volumes:
+  academic_storage:
+networks:
+  aadi-data:
+    external: true

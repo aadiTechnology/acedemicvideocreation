@@ -188,6 +188,18 @@ def _parse_plan(raw: bytes, language: str, issues: list[Issue], name: str = "les
             issues.append(_err("plan_shape", f"{name}: {key} must be a list."))
     if isinstance(plan.get("learning_objectives"), list) and not all(isinstance(x, str) for x in plan["learning_objectives"]):
         issues.append(_err("plan_shape", f"{name}: learning_objectives must be a list of text."))
+    if "slides" in plan:
+        if not isinstance(plan["slides"], list):
+            issues.append(_err("plan_slides", f"{name}: slides must be a list of {{slide, headline, bullets}}."))
+        else:
+            for i, item in enumerate(plan["slides"], 1):
+                ok = (isinstance(item, dict) and isinstance(item.get("slide"), int) and item["slide"] >= 1
+                      and isinstance(item.get("headline"), str) and item["headline"].strip()
+                      and isinstance(item.get("bullets", []), list) and all(isinstance(b, str) for b in item.get("bullets", [])))
+                if not ok:
+                    issues.append(_err("plan_slides", f"{name}: slides item {i} needs a whole-number slide, a headline and a list of bullet texts."))
+                elif len(item.get("bullets", [])) > 5 or any(len(b) > 140 for b in item.get("bullets", [])) or len(item["headline"]) > 100:
+                    issues.append(_err("plan_slides", f"{name}: slides item {i} is too long (headline up to 100 characters, at most 5 bullets of up to 140)."))
     return plan
 
 
@@ -249,6 +261,15 @@ def parse_upload(files: list[tuple[str, bytes]], language: str, lesson_defaults:
     for s in slides:
         if len(s["subtitle_text"]) > 200:
             warnings.append(Issue("long_subtitle", f"Slide {s['slide']}: subtitle_text is long ({len(s['subtitle_text'])} characters); it may be hard to read on screen.", row=s["slide"], severity="warning"))
+    known = {s["slide"] for s in slides}
+    for item in (plan or {}).get("slides", []) if isinstance((plan or {}).get("slides"), list) else []:
+        if isinstance(item, dict) and isinstance(item.get("slide"), int) and item["slide"] not in known:
+            raise ImportRejected([_err("plan_slides", f"lesson_plan.json describes slide {item['slide']}, which is not in lesson.csv.")])
+    short = [s["slide"] for s in slides if len(s["subtitle_text"].split()) < 0.6 * len(s["voice_text"].split())]
+    if short:
+        warnings.append(Issue("short_subtitles", "Captions are timed from subtitle_text, so they follow the narration only if it is close to voice_text. "
+                              f"Slide(s) {', '.join(map(str, short[:8]))}{'...' if len(short) > 8 else ''} have a much shorter subtitle_text than voice_text. "
+                              "Use the narration text as the subtitle text, and put short on-screen wording in lesson_plan.json under slides.", severity="warning"))
     if plan is None:
         plan_out = {"title": lesson_defaults.get("title", ""), "language": language,
                     "learning_objectives": lesson_defaults.get("learning_objectives", []),

@@ -169,12 +169,15 @@ OUTPUT: produce these files and nothing else.
    - Slide: 1, 2, 3 ... (whole numbers, no gaps, no repeats)
    - Module: a short section name for the slide (for example "Introduction", "How it works", "Summary")
    - voice_text: what the narrator says for this slide; natural spoken sentences, 40 to 90 words; no stage directions
-   - subtitle_text: the short on-screen text for the slide (one or two short sentences, at most 120 characters)
+   - subtitle_text: the caption text shown while the narrator speaks. Use the SAME words as voice_text (you may shorten a little).
+     Captions are timed from it, so a short summary here makes the captions run out long before the narration ends.
    - visual_instruction: what the slide should show (diagram, labelled picture, animation idea); do not name image files
    Use 8 to 14 slides. Quote any cell that contains a comma. Do not add other columns.
 2. lesson_plan.json with this shape:
    {{"title": "...", "language": "{v.language}", "learning_objectives": ["..."], "source_references": ["textbook name and page"],
+     "slides": [{{"slide": 1, "headline": "3 to 6 words, the slide title", "bullets": ["2 to 4 short key points, 3 to 8 words each"]}}],
      "quiz": [{{"question": "...", "options": ["...", "..."], "answer": "..."}}]}}
+   Give one "slides" entry for every slide. This short wording is what appears on the slide; the narration appears as captions.
 
 RULES
 - Scientifically correct and appropriate for {klass.name}; no copyrighted textbook text copied word for word.

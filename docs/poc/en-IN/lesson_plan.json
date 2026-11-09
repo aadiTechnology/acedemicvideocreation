@@ -1,0 +1,120 @@
+{
+  "title": "How plants make food: photosynthesis",
+  "language": "en-IN",
+  "learning_objectives": [
+    "Define photosynthesis",
+    "Name the raw materials and products",
+    "Explain the role of chlorophyll and stomata",
+    "Describe the iodine test for starch"
+  ],
+  "source_references": [
+    "Class 7 Science, Chapter 1: Nutrition in Plants (draft; to be checked against the prescribed textbook)"
+  ],
+  "slides": [
+    {
+      "slide": 1,
+      "headline": "Plants make their own food",
+      "bullets": [
+        "Animals eat food for energy",
+        "Plants make their own food",
+        "The process is photosynthesis"
+      ]
+    },
+    {
+      "slide": 2,
+      "headline": "Autotrophs and heterotrophs",
+      "bullets": [
+        "Autotrophs make their own food",
+        "Heterotrophs depend on others",
+        "Our food comes from plants"
+      ]
+    },
+    {
+      "slide": 3,
+      "headline": "Leaves, stomata and chloroplasts",
+      "bullets": [
+        "Leaves: where it happens",
+        "Stomata: tiny openings",
+        "Chloroplasts hold chlorophyll"
+      ]
+    },
+    {
+      "slide": 4,
+      "headline": "Chlorophyll captures sunlight",
+      "bullets": [
+        "Chlorophyll is a green pigment",
+        "It captures sunlight energy",
+        "Only green parts make food"
+      ]
+    },
+    {
+      "slide": 5,
+      "headline": "Sunlight, water and carbon dioxide",
+      "bullets": [
+        "Sunlight: energy",
+        "Water: from the roots",
+        "Carbon dioxide: from the air"
+      ]
+    },
+    {
+      "slide": 6,
+      "headline": "Carbon dioxide + water gives glucose + oxygen",
+      "bullets": [
+        "Chlorophyll captures light energy",
+        "Water and carbon dioxide become glucose",
+        "Oxygen is released"
+      ]
+    },
+    {
+      "slide": 7,
+      "headline": "Glucose, starch and oxygen",
+      "bullets": [
+        "Glucose: energy to grow",
+        "Extra glucose: stored as starch",
+        "Oxygen: released into the air"
+      ]
+    },
+    {
+      "slide": 8,
+      "headline": "The iodine test for starch",
+      "bullets": [
+        "Boil the leaf in alcohol",
+        "Add iodine solution",
+        "Blue-black means starch"
+      ]
+    },
+    {
+      "slide": 9,
+      "headline": "Why photosynthesis matters",
+      "bullets": [
+        "Food for plants and animals",
+        "Balances carbon dioxide and oxygen",
+        "Protect plants, plant trees"
+      ]
+    },
+    {
+      "slide": 10,
+      "headline": "Summary: how plants make food",
+      "bullets": [
+        "Raw materials: sunlight, water, carbon dioxide",
+        "Products: glucose and oxygen",
+        "Extra glucose is stored as starch"
+      ]
+    }
+  ],
+  "quiz": [
+    {
+      "question": "Which pigment in a leaf captures sunlight?",
+      "options": [
+        "Chlorophyll",
+        "Starch",
+        "Glucose"
+      ],
+      "answer": "Chlorophyll"
+    },
+    {
+      "question": "Name the two products of photosynthesis.",
+      "answer": "Glucose and oxygen"
+    }
+  ]
+}
