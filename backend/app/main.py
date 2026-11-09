@@ -12,7 +12,7 @@ from sqlalchemy import text
 from app import db as database
 from app.config import Settings, load_settings
 from app import oidc
-from app.routers import admin, lessons, structure
+from app.routers import admin, lessons, structure, versions
 
 logger = logging.getLogger("academic")
 
@@ -37,6 +37,12 @@ def create_app(settings: Settings | None = None, oidc_http=None) -> FastAPI:
         logger.exception("unhandled error corr=%s", getattr(request.state, "correlation_id", "-"))
         return JSONResponse({"detail": "Something went wrong.", "correlation_id": getattr(request.state, "correlation_id", "")}, status_code=500)
 
+    @app.get("/api/me")
+    def me(request: Request):
+        from app.auth import current_user
+        user = current_user(request)
+        return {"user_id": user.user_id, "tenant_id": user.tenant_id, "email": user.email, "name": user.name, "roles": list(user.roles)}
+
     @app.get("/health")
     def health() -> dict:
         return {"status": "ok"}
@@ -55,7 +61,7 @@ def create_app(settings: Settings | None = None, oidc_http=None) -> FastAPI:
             logger.warning("OIDC sign-in is not configured: set SESSION_SECRET and the IDENTITY_* variables.")
         else:
             app.include_router(oidc.create_router(settings, oidc.OIDCClient(settings, oidc_http)))
-    for router in (*structure.routers, lessons.router, admin.router):
+    for router in (*structure.routers, lessons.router, admin.router, versions.router):
         app.include_router(router, prefix="/api")
     return app
 

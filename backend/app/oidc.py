@@ -167,10 +167,4 @@ def create_router(settings: Settings, oidc: OIDCClient) -> APIRouter:
         resp.delete_cookie(SESSION_COOKIE, path="/")
         return resp
 
-    @router.get("/api/me")
-    def me(request: Request):
-        from app.auth import current_user
-        user = current_user(request)
-        return JSONResponse({"user_id": user.user_id, "tenant_id": user.tenant_id, "email": user.email, "name": user.name, "roles": list(user.roles)})
-
     return router

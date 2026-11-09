@@ -102,3 +102,26 @@ class LessonVersion(Tenanted, Base):
     language: Mapped[str] = mapped_column(String(8))
     review_status: Mapped[str] = mapped_column(String(24), default="draft")
     publication_status: Mapped[str | None] = mapped_column(String(24), nullable=True)  # reserved for a future student portal
+    # imported content (Sprint 5): the canonical package is kept on disk; slides/lesson_plan are its normalized form
+    slides: Mapped[list] = mapped_column(JSON, default=list)
+    lesson_plan: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    package_path: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    package_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    package_filename: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    imported_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    imported_by: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    review_note: Mapped[str] = mapped_column(Text, default="")
+    reviewed_by: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class ReviewEvent(Tenanted, Base):
+    """History of review status changes. Approval is separate from video completion."""
+
+    __tablename__ = "review_events"
+    version_id: Mapped[str] = mapped_column(ForeignKey("lesson_versions.id", ondelete="CASCADE"), index=True)
+    action: Mapped[str] = mapped_column(String(24))
+    from_status: Mapped[str] = mapped_column(String(24))
+    to_status: Mapped[str] = mapped_column(String(24))
+    note: Mapped[str] = mapped_column(Text, default="")
+    actor_id: Mapped[str] = mapped_column(String(64))

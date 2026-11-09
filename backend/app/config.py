@@ -27,6 +27,7 @@ class Settings:
     video_engine_url: str
     video_engine_api_key: str
     video_engine_timeout: float
+    storage_dir: str = ""
 
     @property
     def is_production(self) -> bool:
@@ -48,6 +49,7 @@ def load_settings(env=None) -> Settings:
         video_engine_url=e.get("VIDEO_ENGINE_URL", "").rstrip("/"),
         video_engine_api_key=e.get("VIDEO_ENGINE_API_KEY", ""),
         video_engine_timeout=float(e.get("VIDEO_ENGINE_TIMEOUT_SECONDS", "30")),
+        storage_dir=e.get("STORAGE_LOCAL_DIR", "./storage"),
     )
     if s.is_production and s.auth_mode == "dev":
         raise RuntimeError("AUTH_MODE=dev is not allowed when APP_ENV=production.")

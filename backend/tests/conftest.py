@@ -4,6 +4,7 @@ Override with ACADEMIC_TEST_DATABASE_URL.
 """
 
 import os
+import tempfile
 
 import pytest
 from fastapi.testclient import TestClient
@@ -19,7 +20,8 @@ TEST_URL = _normalise_url(os.environ.get("ACADEMIC_TEST_DATABASE_URL", "postgres
 def make_settings(**over) -> Settings:
     base = dict(app_env="test", database_url=TEST_URL, auth_mode="dev", app_base_url="http://testserver", session_secret="test-secret",
                 identity_issuer_url="", identity_client_id="", identity_client_secret="", identity_product_key="academics",
-                video_engine_url="", video_engine_api_key="", video_engine_timeout=5.0)
+                video_engine_url="", video_engine_api_key="", video_engine_timeout=5.0,
+                storage_dir=tempfile.mkdtemp(prefix="academic-test-"))
     base.update(over)
     return Settings(**base)
 
@@ -42,7 +44,7 @@ def database():
 @pytest.fixture(autouse=True)
 def clean(database):
     with database.begin() as c:
-        c.execute(text("TRUNCATE lesson_versions, lessons, topics, chapters, subjects, school_classes, user_roles, app_users CASCADE"))
+        c.execute(text("TRUNCATE lesson_versions, lessons, topics, chapters, subjects, school_classes, user_roles, app_users, review_events CASCADE"))
 
 
 @pytest.fixture()

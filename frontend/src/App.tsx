@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { api, ApiError, LANGUAGES, Language, LessonRow, Named } from "./api";
+import { api, ApiError, LANGUAGES, Language, LessonRow, Me, Named, versions } from "./api";
+import VersionPanel from "./VersionPanel";
 
 type Tab = "lessons" | "structure";
 
@@ -115,10 +116,11 @@ function NewLesson({ s, onCreated }: { s: ReturnType<typeof useStructure>; onCre
   );
 }
 
-function LessonsTab({ s }: { s: ReturnType<typeof useStructure> }) {
+function LessonsTab({ s, me }: { s: ReturnType<typeof useStructure>; me: Me }) {
   const [rows, setRows] = useState<LessonRow[]>([]);
   const [language, setLanguage] = useState("");
   const [open, setOpen] = useState<LessonRow | null>(null);
+  const [openVersion, setOpenVersion] = useState<string | null>(null);
   const [err, setErr] = useState("");
   const load = useCallback(async () => {
     try { setRows(await api.list<LessonRow>(`/lessons${language ? `?language=${language}` : ""}`)); } catch (e) { setErr((e as ApiError).message); }
@@ -159,9 +161,12 @@ function LessonsTab({ s }: { s: ReturnType<typeof useStructure> }) {
           <p>Add a language version:{" "}
             {LANGUAGES.filter((l) => !open.versions.some((v) => v.language === l.code)).map((l) => <button key={l.code} className="link" style={{ marginRight: 10 }} onClick={() => addVersion(open, l.code)}>{l.label}</button>)}
           </p>
-          <p className="muted">Import, review and video generation arrive in the next releases.</p>
+          <p>Open a language version to import and review its content:{" "}
+            {open.versions.map((v) => <button key={v.id} className="link" style={{ marginRight: 10 }} onClick={() => setOpenVersion(v.id)}>{label(v.language)} ({statusText(v.review_status)})</button>)}
+          </p>
         </div>
       )}
+      {open && openVersion && open.versions.some((v) => v.id === openVersion) && <VersionPanel versionId={openVersion} me={me} onChanged={load} />}
     </>
   );
 }
@@ -169,6 +174,8 @@ function LessonsTab({ s }: { s: ReturnType<typeof useStructure> }) {
 export default function App() {
   const [tab, setTab] = useState<Tab>("lessons");
   const s = useStructure();
+  const [me, setMe] = useState<Me>({ user_id: "", email: "", name: "", roles: [] });
+  useEffect(() => { versions.me().then(setMe); }, []);
   return (
     <>
       <header>
@@ -178,7 +185,7 @@ export default function App() {
           <button className={tab === "structure" ? "on" : ""} onClick={() => setTab("structure")}>Structure</button>
         </nav>
       </header>
-      <main>{tab === "lessons" ? <LessonsTab s={s} /> : <StructureTab s={s} />}</main>
+      <main>{tab === "lessons" ? <LessonsTab s={s} me={me} /> : <StructureTab s={s} />}</main>
     </>
   );
 }
