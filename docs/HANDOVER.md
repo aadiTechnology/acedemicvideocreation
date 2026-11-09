@@ -63,6 +63,7 @@ Names and purpose only: `.env.example` in each repo; production values in Coolif
 
 ## 9. Known limitations and variant readiness
 
+- **Built-in animated science illustrations** (layout `illustration`): refraction (Snell's law angles), photosynthesis, water cycle, leaf cross-section, with labels in English, Hindi and Marathi. Only these four topics exist; each new topic is one more drawing function (`engine/illustrations.py`) plus its name in the Academic validator. Hindi/Marathi terms need a subject-expert review. No photographs or supplied pictures yet (pictures from files or open sources were discussed, not built).
 - **Level 1 animated slides** (default; `render.style`): headline, bullets, flow, equation, cycle and comparison layouts, narration-synced reveals, highlighting, fades. Timing is an estimate from sentence lengths, not word-level. No pictures, photographs, characters or 3D (Level 2 and 3 are not built). Plain still slides remain available. See `ScriptToVideo/docs/architecture/ANIMATED_SLIDES.md`.
 - Colab narration is a manual step per language version; the notebook was never run; the model (AI4Bharat Indic Parler-TTS) and its licence are unvalidated.
 - Latin letters inside Hindi/Marathi text have no glyph in Noto Sans Devanagari (mixed-script text needs a fallback font).
