@@ -2,15 +2,15 @@
 
 Three videos, one per language, each made through the real chain: Academic API (import, approve, generate) -> Video Engine API -> worker -> MP4 -> Academic storage -> download. Content is in `docs/poc/<language>/` (10 slides each). The run is reproducible with `docs/poc/run_poc.py`.
 
-**Overall: the pipeline works for all three languages. Hindi and Marathi narration is NOT validated (BLOCKED), and the English voice is only a test voice.** Do not present these as final videos.
+**Overall: the pipeline works for all three languages. Hindi and Marathi narration is NOT validated (BLOCKED), and the English voice is only a test voice.** Do not present these as final videos. The slides are Level 1 animated slides; the earlier static-slide run is kept in `results-static/`.
 
 ## Results
 
 | Language | Duration | Resolution | Codec | Decode errors | Size |
 |---|---|---|---|---|---|
-| English | 4:02 | 1920x1080 @ 24 fps | h264 + audio | none | 6.71 MB |
-| Hindi | 4:07 | 1920x1080 @ 24 fps | h264 + audio | none | 2.14 MB |
-| Marathi | 4:04 | 1920x1080 @ 24 fps | h264 + audio | none | 2.05 MB |
+| English | 4:02 | 1920x1080 @ 24 fps | h264 + audio | none | 7.71 MB |
+| Hindi | 4:07 | 1920x1080 @ 24 fps | h264 + audio | none | 3.05 MB |
+| Marathi | 4:04 | 1920x1080 @ 24 fps | h264 + audio | none | 3.0 MB |
 
 ## Validation against the POC criteria
 
@@ -22,11 +22,17 @@ Three videos, one per language, each made through the real chain: Academic API (
 | Slides match the audio (checked with a frame from the middle of each slide's audio window; the on-screen counter matches the slide) | PASS | PASS (placeholder timing) | PASS (placeholder timing) |
 | **Caption sync with real speech** | PASS in timing logic; not independently checked against a human ear | **BLOCKED** (no speech) | **BLOCKED** (no speech) |
 | Devanagari text shaping on slides and captions | n/a | PASS (visual check of contact sheet) | PASS (visual check of contact sheet) |
-| Visuals / animation | LIMITED: clean text slides (headline and bullets). No diagrams, pictures or animation | same | same |
+| Visuals / animation | PASS for Level 1 animated slides: the headline slides in, bullets/steps/terms appear as the narrator reaches them, the current item is highlighted, arrows are drawn, slides fade between each other. Slides 2, 6, 8 and 10 use a comparison, the equation and two flows. LIMITED: no pictures, characters or 3D | same | same |
 | MP4 valid: H.264 + AAC, 1920x1080, 24 fps, decodes with no errors | PASS | PASS | PASS |
 | Duration about 5 minutes | PASS: 4:02 (script is 242.2 s of narration) | PASS: 4:07 | PASS: 4:04, but placeholder timing; real Marathi speech may be shorter or longer |
 | Reproducibility (same package and audio rendered twice) | PASS: video frames identical = True, audio identical = True, file bytes identical = True | not run | not run |
 | End to end without copying files between the two apps | PASS | PASS | PASS |
+
+## Animated slides (second run)
+
+The POC was re-run with `render.style = animated` (the default in the app). Results are in the table above. Animating did not change the run time noticeably (frames that do not change are re-used). Frames from the finished videos (`results/contact-<lang>.png`) show items revealed part-way through slides, the current item in bold, flow arrows being drawn, and correct Devanagari shaping.
+
+Found in this run and fixed: the arrow in the equation slide showed as an empty box in Hindi and Marathi, because the Devanagari font has no arrow glyph. Operators are now drawn as shapes. Narration sync is an estimate from sentence lengths and the real audio duration, not word-level alignment, and was not checked against real Hindi or Marathi speech.
 
 ## What the POC found and fixed
 

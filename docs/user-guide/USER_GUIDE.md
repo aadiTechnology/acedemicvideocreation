@@ -133,6 +133,27 @@ Production operator, on an **approved** version, in step 5 **Make the video**.
 
 If something fails, the message says what happened. **Try again** is offered when it is safe; **Cancel** stops an unfinished video; **Make the video again** starts a new one after content changes.
 
+## 7. Animated slides
+
+Videos are made with **animated slides** by default (Slides: *Animated (recommended)* in step 5; choose *Plain* for still slides). The headline slides in, the points of each slide appear one by one as the narrator reaches them, the point being spoken is highlighted, and slides fade into each other. Timing follows the narration sentence by sentence (an estimate, not word by word).
+
+A slide can use a layout instead of bullets. The ChatGPT prompt already asks for them, in `lesson_plan.json` under `slides`:
+
+| Layout | Use it for | Example |
+|---|---|---|
+| `bullets` (default) | short points | `"bullets": ["Sunlight gives energy", "Water from the roots"]` |
+| `flow` | a procedure or inputs, process, outputs; 2 to 5 steps, arrows are drawn | `"diagram": {"steps": ["Boil the leaf", "Add iodine", "Blue-black means starch"]}` |
+| `equation` | a formula; terms appear in order | `"diagram": {"terms": ["Carbon dioxide", "+", "Water", "→", "Glucose"]}` |
+| `cycle` | a loop of 3 to 6 stages, e.g. the water cycle | `"diagram": {"nodes": ["Evaporation", "Condensation", "Precipitation", "Collection"]}` |
+| `compare` | two things side by side | `"diagram": {"left": {"title": "A", "points": ["..."]}, "right": {"title": "B", "points": ["..."]}}` |
+
+Keep labels short (1 to 4 words) and list items in the order the narrator says them. If a diagram is not valid, the import check names the slide and the problem. Details: `ScriptToVideo/docs/architecture/ANIMATED_SLIDES.md`.
+
+![Flow](img/anim-flow.png)
+![Equation](img/anim-equation.png)
+![Cycle](img/anim-cycle.png)
+![Compare](img/anim-compare.png)
+
 ## Videos for each part
 
 | Part | Video |
@@ -141,7 +162,8 @@ If something fails, the message says what happened. **Try again** is offered whe
 | Set up and create a lesson (sections 1 and 2) | `docs/demos/sprint-4-foundation.mp4` |
 | From content to approval (sections 3 to 5) | `docs/demos/sprint-5-import-review.mp4` |
 | Make the video (section 6) | `docs/demos/sprint-6-integration.mp4` |
-| **Everything above in one video (7.5 minutes)** | `docs/demos/full-user-guide.mp4` |
+| Animated slides (section 7) | `docs/demos/sprint-9-animated-slides.mp4` |
+| **Everything above in one video (about 10 minutes)** | `docs/demos/full-user-guide.mp4` |
 
 
 ## Rebuilding the screens and videos

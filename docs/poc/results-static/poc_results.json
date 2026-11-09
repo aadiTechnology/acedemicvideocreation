@@ -1,0 +1,91 @@
+{
+  "en-IN": {
+    "duration_s": 242.07,
+    "video_codec": "h264",
+    "resolution": "1920x1080",
+    "fps": 24.0,
+    "has_audio": true,
+    "decode_errors": [],
+    "size_mb": 6.71,
+    "sha256": "e14494ab6d0c9bf0c842ac1a2e1e4e52ad6bc6f41c399d97ccef1745e24e49d9",
+    "language": "English",
+    "slides": 10,
+    "narration_total_s": 242.2,
+    "job_id": "a4c3bccb-f572-41f7-b530-a899db69ff6f",
+    "version_id": "7d6bf23d-6119-4b80-95dc-cea5580c4eb9",
+    "narration": "Windows voice (Zira), test voice",
+    "warnings": [
+      "Slide 1: subtitle_text is long (272 characters); it may be hard to read on screen.",
+      "Slide 2: subtitle_text is long (327 characters); it may be hard to read on screen.",
+      "Slide 3: subtitle_text is long (331 characters); it may be hard to read on screen.",
+      "Slide 4: subtitle_text is long (345 characters); it may be hard to read on screen.",
+      "Slide 5: subtitle_text is long (290 characters); it may be hard to read on screen.",
+      "Slide 6: subtitle_text is long (317 characters); it may be hard to read on screen.",
+      "Slide 7: subtitle_text is long (320 characters); it may be hard to read on screen.",
+      "Slide 8: subtitle_text is long (307 characters); it may be hard to read on screen.",
+      "Slide 9: subtitle_text is long (317 characters); it may be hard to read on screen.",
+      "Slide 10: subtitle_text is long (320 characters); it may be hard to read on screen."
+    ]
+  },
+  "hi-IN": {
+    "duration_s": 247.81,
+    "video_codec": "h264",
+    "resolution": "1920x1080",
+    "fps": 24.0,
+    "has_audio": true,
+    "decode_errors": [],
+    "size_mb": 2.14,
+    "sha256": "f22461ae82df0836e31f91c7075564c72514bd5fdd22deb98b1f5537b5dc5e49",
+    "language": "Hindi",
+    "slides": 10,
+    "narration_total_s": 247.9,
+    "job_id": "89770dd3-78ab-40d4-a7f6-e2d0169415da",
+    "version_id": "c7bc6d24-2084-4702-986e-79da32db7505",
+    "narration": "SILENT PLACEHOLDER (no local voice)",
+    "warnings": [
+      "Slide 1: subtitle_text is long (301 characters); it may be hard to read on screen.",
+      "Slide 2: subtitle_text is long (321 characters); it may be hard to read on screen.",
+      "Slide 3: subtitle_text is long (338 characters); it may be hard to read on screen.",
+      "Slide 4: subtitle_text is long (360 characters); it may be hard to read on screen.",
+      "Slide 5: subtitle_text is long (302 characters); it may be hard to read on screen.",
+      "Slide 6: subtitle_text is long (314 characters); it may be hard to read on screen.",
+      "Slide 7: subtitle_text is long (302 characters); it may be hard to read on screen.",
+      "Slide 8: subtitle_text is long (297 characters); it may be hard to read on screen.",
+      "Slide 9: subtitle_text is long (343 characters); it may be hard to read on screen.",
+      "Slide 10: subtitle_text is long (337 characters); it may be hard to read on screen."
+    ]
+  },
+  "mr-IN": {
+    "duration_s": 244.81,
+    "video_codec": "h264",
+    "resolution": "1920x1080",
+    "fps": 24.0,
+    "has_audio": true,
+    "decode_errors": [],
+    "size_mb": 2.05,
+    "sha256": "3072ea252635eb0f32db21097643ac32bb81d2b3df17238a34f42dd70d3a21da",
+    "language": "Marathi",
+    "slides": 10,
+    "narration_total_s": 244.8,
+    "job_id": "71afab6f-a74f-4899-b056-39ef89b18bdd",
+    "version_id": "36dafda1-e126-4955-a21c-534adfedc1e3",
+    "narration": "SILENT PLACEHOLDER (no local voice)",
+    "warnings": [
+      "Slide 1: subtitle_text is long (314 characters); it may be hard to read on screen.",
+      "Slide 2: subtitle_text is long (339 characters); it may be hard to read on screen.",
+      "Slide 3: subtitle_text is long (321 characters); it may be hard to read on screen.",
+      "Slide 4: subtitle_text is long (338 characters); it may be hard to read on screen.",
+      "Slide 5: subtitle_text is long (269 characters); it may be hard to read on screen.",
+      "Slide 6: subtitle_text is long (295 characters); it may be hard to read on screen.",
+      "Slide 7: subtitle_text is long (312 characters); it may be hard to read on screen.",
+      "Slide 8: subtitle_text is long (293 characters); it may be hard to read on screen.",
+      "Slide 9: subtitle_text is long (328 characters); it may be hard to read on screen.",
+      "Slide 10: subtitle_text is long (365 characters); it may be hard to read on screen."
+    ]
+  },
+  "reproducibility_english": {
+    "video_frames_identical": true,
+    "audio_identical": true,
+    "file_bytes_identical": true
+  }
+}

@@ -63,7 +63,7 @@ Names and purpose only: `.env.example` in each repo; production values in Coolif
 
 ## 9. Known limitations and variant readiness
 
-- Slides are clean text (headline and bullets); no pictures, diagrams or animation unless images are supplied in the package.
+- **Level 1 animated slides** (default; `render.style`): headline, bullets, flow, equation, cycle and comparison layouts, narration-synced reveals, highlighting, fades. Timing is an estimate from sentence lengths, not word-level. No pictures, photographs, characters or 3D (Level 2 and 3 are not built). Plain still slides remain available. See `ScriptToVideo/docs/architecture/ANIMATED_SLIDES.md`.
 - Colab narration is a manual step per language version; the notebook was never run; the model (AI4Bharat Indic Parler-TTS) and its licence are unvalidated.
 - Latin letters inside Hindi/Marathi text have no glyph in Noto Sans Devanagari (mixed-script text needs a fallback font).
 - Session is an 8-hour signed cookie: no refresh, no revocation check. No admin UI for roles (API only).
@@ -81,6 +81,7 @@ User-guide videos (real screens, numbered click targets): `Media\Academics\docs\
 
 ## 12. What the owner needs to do
 
+0. Production was briefly unavailable (about 40 s) during the last redeploys; expect that on every deploy.
 1. Add an `academics` subscription for your company in Identity (platform admin), then sign in first so you become the company admin.
 2. Run the production smoke test with the user guide.
 3. Run the Colab notebook per language and listen; decide on the voice model.
