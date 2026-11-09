@@ -14,8 +14,8 @@ export default function VideoPanel({ versionId, approved, me }: { versionId: str
   const [err, setErr] = useState("");
   const [issues, setIssues] = useState<Issue[]>([]);
   const [busy, setBusy] = useState(false);
-  const [provider, setProvider] = useState("colab");
-  const [profile, setProfile] = useState("1080p24");
+  const [provider, setProvider] = useState("azure");
+  const [profile, setProfile] = useState("480p24");
   const [subtitles, setSubtitles] = useState(true);
   const [style, setStyle] = useState("animated");
   const [audio, setAudio] = useState<File | null>(null);
@@ -62,7 +62,7 @@ export default function VideoPanel({ versionId, approved, me }: { versionId: str
           </label>
           <label>Quality
             <select value={profile} onChange={(e) => setProfile(e.target.value)}>
-              <option value="1080p24">Full HD (1080p)</option><option value="720p24">HD (720p)</option>
+              <option value="480p24">Standard (480p, fastest)</option><option value="720p24">HD (720p)</option><option value="1080p24">Full HD (1080p)</option>
             </select>
           </label>
           <label style={{ gridAutoFlow: "column", alignItems: "center", display: "inline-flex", gap: 6 }}>
@@ -79,7 +79,7 @@ export default function VideoPanel({ versionId, approved, me }: { versionId: str
       {job && (
         <div className="card" style={{ marginTop: 12 }}>
           <p><span className={`chip ${job.state === "succeeded" ? "approved" : job.state === "failed" ? "changes_required" : "in_review"}`}>{STATE_TEXT[job.state] ?? job.state}</span>
-            {" "}<span className="muted">{job.settings.provider === "colab" ? "Colab voice" : "Azure voice"}, {job.settings.profile === "1080p24" ? "Full HD" : "HD"}, {job.settings.style === "animated" ? "animated slides" : "plain slides"}</span></p>
+            {" "}<span className="muted">{job.settings.provider === "colab" ? "Colab voice" : "Azure voice"}, {({ "1080p24": "Full HD", "720p24": "HD", "480p24": "Standard 480p" } as Record<string, string>)[job.settings.profile] ?? job.settings.profile}, {job.settings.style === "animated" ? "animated slides" : "plain slides"}</span></p>
           {active && job.state !== "awaiting_audio" && (
             <div aria-label="Progress" style={{ background: "var(--line)", borderRadius: 6, height: 12, maxWidth: 480 }}>
               <div style={{ width: `${Math.max(4, job.percent)}%`, height: 12, borderRadius: 6, background: "var(--accent)" }} />

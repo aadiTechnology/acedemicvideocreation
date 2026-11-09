@@ -25,7 +25,7 @@ logger = logging.getLogger("academic.video")
 router = APIRouter()
 operator = require_roles("production_operator")
 
-PROFILES = ("1080p24", "720p24")
+PROFILES = ("1080p24", "720p24", "480p24")
 MAX_AUDIO_BYTES = 200 * 1024 * 1024
 FRIENDLY = {
     "engine_unavailable": "The video service is not reachable right now. Try again in a minute.",
@@ -39,10 +39,10 @@ FRIENDLY = {
 
 
 class GenerateIn(BaseModel):
-    provider: str = "colab"
+    provider: str = "azure"
     mode: str | None = None
     voice: str | None = None
-    profile: str = "1080p24"
+    profile: str = "480p24"
     subtitles: bool = True
     style: str = "animated"  # animated slides (layouts, diagrams, highlighting) or plain
     rerender: bool = False
