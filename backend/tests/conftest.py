@@ -42,7 +42,7 @@ def database():
 @pytest.fixture(autouse=True)
 def clean(database):
     with database.begin() as c:
-        c.execute(text("TRUNCATE lesson_versions, lessons, topics, chapters, subjects, school_classes CASCADE"))
+        c.execute(text("TRUNCATE lesson_versions, lessons, topics, chapters, subjects, school_classes, user_roles, app_users CASCADE"))
 
 
 @pytest.fixture()

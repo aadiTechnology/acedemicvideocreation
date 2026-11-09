@@ -21,6 +21,13 @@ def get_engine():
     return _engine
 
 
+def session() -> Session:
+    """A session for code that runs outside a request dependency (use as a context manager)."""
+    if _factory is None:
+        raise RuntimeError("Database is not initialised.")
+    return _factory()
+
+
 def get_db() -> Iterator[Session]:
     if _factory is None:
         raise RuntimeError("Database is not initialised.")

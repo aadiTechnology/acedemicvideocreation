@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app import models, schemas
-from app.auth import CurrentUser, current_user
+from app.auth import CurrentUser, current_user, writer
 from app.db import get_db
 
 
@@ -40,7 +40,7 @@ def build(prefix: str, model, in_schema, out_schema, parent: tuple[str, type] | 
         return db.scalars(q.order_by(*order)).all()
 
     @router.post("", status_code=201, response_model=out_schema)
-    def create(body: in_schema, db: Session = Depends(get_db), user: CurrentUser = Depends(current_user)):
+    def create(body: in_schema, db: Session = Depends(get_db), user: CurrentUser = Depends(writer)):
         if parent:
             owned(db, parent[1], getattr(body, parent[0]), user)
         obj = model(tenant_id=user.tenant_id, **body.model_dump())
@@ -53,7 +53,7 @@ def build(prefix: str, model, in_schema, out_schema, parent: tuple[str, type] | 
         return owned(db, model, item_id, user)
 
     @router.put("/{item_id}", response_model=out_schema)
-    def update(item_id: str, body: in_schema, db: Session = Depends(get_db), user: CurrentUser = Depends(current_user)):
+    def update(item_id: str, body: in_schema, db: Session = Depends(get_db), user: CurrentUser = Depends(writer)):
         obj = owned(db, model, item_id, user)
         if parent:
             owned(db, parent[1], getattr(body, parent[0]), user)
@@ -63,7 +63,7 @@ def build(prefix: str, model, in_schema, out_schema, parent: tuple[str, type] | 
         return obj
 
     @router.delete("/{item_id}", status_code=204)
-    def delete(item_id: str, db: Session = Depends(get_db), user: CurrentUser = Depends(current_user)):
+    def delete(item_id: str, db: Session = Depends(get_db), user: CurrentUser = Depends(writer)):
         db.delete(owned(db, model, item_id, user))
         _commit(db)
 

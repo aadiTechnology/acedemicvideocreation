@@ -30,6 +30,24 @@ class Tenanted:
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
+class AppUser(Tenanted, Base):
+    """A person who has signed in. user_id is the Aadi Identity user id (claim sub)."""
+
+    __tablename__ = "app_users"
+    __table_args__ = (UniqueConstraint("tenant_id", "user_id", name="uq_app_user"),)
+    user_id: Mapped[str] = mapped_column(String(64))
+    email: Mapped[str] = mapped_column(String(200), default="")
+    name: Mapped[str] = mapped_column(String(200), default="")
+    last_login_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class UserRole(Tenanted, Base):
+    __tablename__ = "user_roles"
+    __table_args__ = (UniqueConstraint("tenant_id", "user_id", "role", name="uq_user_role"),)
+    user_id: Mapped[str] = mapped_column(String(64))
+    role: Mapped[str] = mapped_column(String(32))
+
+
 class SchoolClass(Tenanted, Base):
     __tablename__ = "school_classes"
     __table_args__ = (UniqueConstraint("tenant_id", "name", name="uq_class_name"),)

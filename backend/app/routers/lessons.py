@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app import models as m
 from app import schemas
-from app.auth import CurrentUser, current_user
+from app.auth import CurrentUser, current_user, writer
 from app.db import get_db
 from app.routers.structure import _commit, owned
 
@@ -56,7 +56,7 @@ def list_lessons(
 
 
 @router.post("", status_code=201, response_model=schemas.LessonOut)
-def create_lesson(body: schemas.LessonCreate, db: Session = Depends(get_db), user: CurrentUser = Depends(current_user)):
+def create_lesson(body: schemas.LessonCreate, db: Session = Depends(get_db), user: CurrentUser = Depends(writer)):
     owned(db, m.Topic, body.topic_id, user)
     data = body.model_dump(exclude={"languages"})
     lesson = m.Lesson(tenant_id=user.tenant_id, created_by=user.user_id, **data)
@@ -74,7 +74,7 @@ def get_lesson(lesson_id: str, db: Session = Depends(get_db), user: CurrentUser 
 
 
 @router.patch("/{lesson_id}", response_model=schemas.LessonOut)
-def update_lesson(lesson_id: str, body: schemas.LessonUpdate, db: Session = Depends(get_db), user: CurrentUser = Depends(current_user)):
+def update_lesson(lesson_id: str, body: schemas.LessonUpdate, db: Session = Depends(get_db), user: CurrentUser = Depends(writer)):
     lesson = owned(db, m.Lesson, lesson_id, user)
     for key, value in body.model_dump(exclude_unset=True).items():
         setattr(lesson, key, value)
@@ -83,7 +83,7 @@ def update_lesson(lesson_id: str, body: schemas.LessonUpdate, db: Session = Depe
 
 
 @router.delete("/{lesson_id}", status_code=204)
-def delete_lesson(lesson_id: str, db: Session = Depends(get_db), user: CurrentUser = Depends(current_user)):
+def delete_lesson(lesson_id: str, db: Session = Depends(get_db), user: CurrentUser = Depends(writer)):
     lesson = owned(db, m.Lesson, lesson_id, user)
     versions = _versions(db, lesson_id)
     if any(v.review_status != "draft" for v in versions):
@@ -96,7 +96,7 @@ def delete_lesson(lesson_id: str, db: Session = Depends(get_db), user: CurrentUs
 
 
 @router.post("/{lesson_id}/versions", status_code=201, response_model=schemas.VersionOut)
-def add_version(lesson_id: str, body: schemas.VersionCreate, db: Session = Depends(get_db), user: CurrentUser = Depends(current_user)):
+def add_version(lesson_id: str, body: schemas.VersionCreate, db: Session = Depends(get_db), user: CurrentUser = Depends(writer)):
     owned(db, m.Lesson, lesson_id, user)
     version = m.LessonVersion(tenant_id=user.tenant_id, lesson_id=lesson_id, language=body.language)
     db.add(version)
