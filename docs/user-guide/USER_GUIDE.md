@@ -141,6 +141,7 @@ If something fails, the message says what happened. **Try again** is offered whe
 | Set up and create a lesson (sections 1 and 2) | `docs/demos/sprint-4-foundation.mp4` |
 | From content to approval (sections 3 to 5) | `docs/demos/sprint-5-import-review.mp4` |
 | Make the video (section 6) | `docs/demos/sprint-6-integration.mp4` |
+| **Everything above in one video (7.5 minutes)** | `docs/demos/full-user-guide.mp4` |
 
 
 ## Rebuilding the screens and videos
