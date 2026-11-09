@@ -258,7 +258,11 @@ def _parse_plan(raw: bytes, language: str, issues: list[Issue], name: str = "les
     lang = plan.get("language")
     if lang is not None:
         if not isinstance(lang, str) or LANG_ALIASES.get(lang.lower()) != language:
-            issues.append(_err("plan_language", f"{name} says language {lang!r} but this version is {language}."))
+            names = {"en-IN": "English", "hi-IN": "Hindi", "mr-IN": "Marathi"}
+            issues.append(_err("plan_language", f"{name} says language {lang!r} but this version is {language} ({names.get(language, language)}). "
+                                                f"Each language version needs its own files: copy the prompt from THIS version (Show ChatGPT prompt) so ChatGPT writes "
+                                                f"{names.get(language, language)} text with \"language\": \"{language}\". "
+                                                f"If the text really is in {names.get(language, language)}, change \"language\" in {name} to \"{language}\" and import again."))
     for key in ("learning_objectives", "source_references", "quiz"):
         if key in plan and not isinstance(plan[key], list):
             issues.append(_err("plan_shape", f"{name}: {key} must be a list."))

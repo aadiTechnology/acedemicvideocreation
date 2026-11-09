@@ -83,6 +83,15 @@ class EngineClient:
     def upload_audio(self, job_id: str, data: bytes, cid: str | None = None) -> dict:
         return self._request("POST", f"/api/v1/video-jobs/{job_id}/audio", cid, files={"audio": ("audio.zip", data, "application/zip")}).json()
 
+    def preview(self, payload: dict, cid: str | None = None) -> bytes:
+        return self._request("POST", "/api/v1/previews", cid, json=payload).content
+
+    def layouts(self, cid: str | None = None) -> dict:
+        return self._request("GET", "/api/v1/layouts", cid).json()
+
+    def recommend(self, payload: dict, cid: str | None = None) -> dict:
+        return self._request("POST", "/api/v1/layouts/recommend", cid, json=payload).json()
+
     def download_asset(self, job_id: str, asset_id: str, target: Path, cid: str | None = None) -> None:
         """Stream an asset to ``target`` (a temporary file is renamed on success)."""
         if not self.configured:

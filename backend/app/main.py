@@ -13,7 +13,7 @@ from app import db as database
 from app.config import Settings, load_settings
 from app import oidc
 from app.engine_client import EngineClient
-from app.routers import admin, lessons, structure, versions, video
+from app.routers import admin, lessons, slides, structure, versions, video
 
 logger = logging.getLogger("academic")
 
@@ -63,7 +63,7 @@ def create_app(settings: Settings | None = None, oidc_http=None, engine_http=Non
             logger.warning("OIDC sign-in is not configured: set SESSION_SECRET and the IDENTITY_* variables.")
         else:
             app.include_router(oidc.create_router(settings, oidc.OIDCClient(settings, oidc_http)))
-    for router in (*structure.routers, lessons.router, admin.router, versions.router, video.router):
+    for router in (*structure.routers, lessons.router, admin.router, versions.router, video.router, slides.router, slides.layouts_router):
         app.include_router(router, prefix="/api")
     return app
 

@@ -19,6 +19,9 @@ def _multipart(request: httpx.Request) -> dict:
     return out
 
 
+PNG = b"\x89PNG\r\n\x1a\nfake"
+
+
 class FakeEngine:
     KEY = "engine-test-key"
     VIDEO = b"\x00\x00\x00\x18ftypmp42" + b"fake video bytes " * 50
@@ -27,6 +30,8 @@ class FakeEngine:
         self.jobs: dict[str, dict] = {}
         self.by_key: dict[str, str] = {}
         self.submits = 0
+        self.previews: list[dict] = []
+        self.recommends: list[dict] = []
         self.down = False
         self.reject: tuple[int, str, str] | None = None  # (status, code, message) for the next submit
         self.corrupt_download = False
@@ -64,6 +69,14 @@ class FakeEngine:
                                              "providers": [{"name": "azure", "modes": ["api"], "configured": False, "voices": {}},
                                                            {"name": "colab", "modes": ["manual", "tunnel"], "configured": True, "voices": {"en-IN": ["default"]}}],
                                              "features": {"slide_renderer": True}, "limits": {}})
+        if path == "/api/v1/previews" and method == "POST":
+            self.previews.append(json.loads(request.content))
+            return httpx.Response(200, content=PNG, headers={"content-type": "image/png"})
+        if path == "/api/v1/layouts" and method == "GET":
+            return httpx.Response(200, json={"layouts": [{"name": "bullets", "title": "Key points", "example": {}}, {"name": "timeline", "title": "Timeline", "example": {"diagram": {"events": []}}}]})
+        if path == "/api/v1/layouts/recommend" and method == "POST":
+            self.recommends.append(json.loads(request.content))
+            return httpx.Response(200, json={"age_group": "11-13", "recommendations": [{"layout": "flow", "score": 6.0, "reason": "mentions 'process'"}]})
         if path == "/api/v1/video-jobs" and method == "POST":
             parts = _multipart(request)
             manifest = json.loads(parts["manifest"])

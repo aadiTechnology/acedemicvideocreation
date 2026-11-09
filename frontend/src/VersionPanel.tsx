@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { ApiError, Detail, ImportSummary, Issue, LANGUAGES, Me, versions } from "./api";
+import SlideEditor from "./SlideEditor";
 import VideoPanel from "./VideoPanel";
 
 const langName = (c: string) => LANGUAGES.find((l) => l.code === c)?.label ?? c;
@@ -22,6 +23,7 @@ export default function VersionPanel({ versionId, me, onChanged }: { versionId: 
   const [files, setFiles] = useState<File[]>([]);
   const [prompt, setPrompt] = useState("");
   const [note, setNote] = useState("");
+  const [editing, setEditing] = useState<number | null>(null);
   const can = (...roles: string[]) => me.roles.includes("admin") || roles.some((r) => me.roles.includes(r));
 
   const load = useCallback(async () => {
@@ -74,9 +76,10 @@ export default function VersionPanel({ versionId, me, onChanged }: { versionId: 
         <p className="muted">{d.slides.length} slides, {d.word_count} words.</p>
         {d.learning_objectives.length > 0 && <><strong>Learning objectives</strong><ul>{d.learning_objectives.map((o) => <li key={o}>{o}</li>)}</ul></>}
         <table>
-          <thead><tr><th>#</th><th>Module</th><th>Narration</th><th>Subtitle</th><th>Visual</th></tr></thead>
-          <tbody>{d.slides.map((x) => <tr key={x.slide}><td>{x.slide}</td><td>{x.module}</td><td>{x.voice_text}</td><td>{x.subtitle_text}</td><td>{x.visual_instruction}</td></tr>)}</tbody>
+          <thead><tr><th>#</th><th>Module</th><th>Narration</th><th>Subtitle</th><th>Visual</th>{can("content_operator") && <th></th>}</tr></thead>
+          <tbody>{d.slides.map((x) => <tr key={x.slide}><td>{x.slide}</td><td>{x.module}</td><td>{x.voice_text}</td><td>{x.subtitle_text}</td><td>{x.visual_instruction}</td>{can("content_operator") && <td><button className="link" onClick={() => setEditing(x.slide)}>Edit</button></td>}</tr>)}</tbody>
         </table>
+        {editing !== null && d.slides.find((x) => x.slide === editing) && <SlideEditor versionId={versionId} row={d.slides.find((x) => x.slide === editing)!} onSaved={() => { load(); onChanged(); }} onClose={() => setEditing(null)} />}
         {d.quiz.length > 0 && <><strong>Quiz</strong><ul>{d.quiz.map((q, i) => <li key={i}>{q.question}</li>)}</ul></>}
         {d.source_references.length > 0 && <><strong>Sources</strong><ul>{d.source_references.map((q) => <li key={q}>{q}</li>)}</ul></>}
 

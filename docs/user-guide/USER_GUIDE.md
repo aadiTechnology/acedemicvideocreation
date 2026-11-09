@@ -205,3 +205,9 @@ Five more slide layouts can be used in `lesson_plan.json` `slides`. The ChatGPT 
 | `recap` | the closing summary | `bullets` (2 to 5); optional `diagram.question` |
 
 Layout choice: the video engine can recommend layouts (`POST /api/v1/layouts/recommend`: subject, topic, objective, class); the ChatGPT prompt gives the same guidance in words. A person always decides.
+
+## 10. Edit a slide
+
+On the review page, a content operator sees **Edit** at the end of each slide row. The editor has the layout, headline, bullets and diagram (JSON; picking a layout fills an example). **Preview** shows the slide as it will appear in the video; the slider chooses the moment. **Suggest a layout** lists up to three layouts with the reason for each; a click applies one. **Save slide** checks the slide with the import rules: an invalid slide is refused with the reason. Saving changes the content, so an approved version becomes a draft and needs a new review.
+
+If an import says the language in `lesson_plan.json` does not match (for example `'en-IN'` in a Hindi version), each language version needs its own files: use **Show ChatGPT prompt** in that version.

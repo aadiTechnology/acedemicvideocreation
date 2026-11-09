@@ -16,7 +16,7 @@ export interface LessonRow {
 export interface Issue { code: string; message: string; row?: number; column?: string; severity?: string }
 export class ApiError extends Error { issues: Issue[] = []; }
 
-async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
+export async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
   const res = await fetch(`/api${path}`, {
     method,
     headers: body ? { "Content-Type": "application/json" } : undefined,
