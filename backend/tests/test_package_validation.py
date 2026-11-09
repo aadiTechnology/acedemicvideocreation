@@ -214,3 +214,23 @@ def test_animation_layouts_are_validated():
     ]
     for slide in bad:
         assert "plan_diagram" in codes(base + [_plan(slide)]), slide
+
+
+def test_illustration_layouts_are_validated():
+    base = [("lesson.csv", csv_bytes([ROW]))]
+    for template in ("refraction", "photosynthesis", "water_cycle", "leaf_section"):
+        p = ok(base + [_plan({"layout": "illustration", "diagram": {"template": template}})])
+        assert p.lesson_plan["slides"][0]["layout"] == "illustration"
+    good = {"layout": "illustration", "diagram": {"template": "refraction", "params": {"medium": "water", "direction": "into_rarer", "angle": 28}, "labels": {"normal": "Normal"}}}
+    assert ok(base + [_plan(good)])
+    bad = [
+        {"layout": "illustration"},
+        {"layout": "illustration", "diagram": {"template": "volcano"}},
+        {"layout": "illustration", "diagram": {"template": "refraction", "params": {"medium": "oil"}}},
+        {"layout": "illustration", "diagram": {"template": "refraction", "params": {"direction": "sideways"}}},
+        {"layout": "illustration", "diagram": {"template": "refraction", "params": {"angle": 89}}},
+        {"layout": "illustration", "diagram": {"template": "refraction", "params": "x"}},
+        {"layout": "illustration", "diagram": {"template": "refraction", "labels": {"normal": ""}}},
+    ]
+    for slide in bad:
+        assert "plan_diagram" in codes(base + [_plan(slide)]), slide

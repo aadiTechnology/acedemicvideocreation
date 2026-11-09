@@ -183,6 +183,15 @@ OUTPUT: produce these files and nothing else.
    - "equation": {{"layout": "equation", "diagram": {{"terms": ["Carbon dioxide", "+", "Water", "→", "Glucose", "+", "Oxygen"], "note": "in sunlight"}}}}
    - "cycle": {{"layout": "cycle", "diagram": {{"nodes": ["Evaporation", "Condensation", "Precipitation", "Collection"]}}}}   (3 to 6 nodes in a loop)
    - "compare": {{"layout": "compare", "diagram": {{"left": {{"title": "A", "points": ["..."]}}, "right": {{"title": "B", "points": ["..."]}}}}}}
+   - "illustration": a drawn, animated science picture whose parts appear in stages as the narrator mentions them. Use it ONLY when the slide teaches exactly that topic:
+       {{"layout": "illustration", "diagram": {{"template": "refraction", "params": {{"medium": "glass", "direction": "into_denser", "angle": 50}}}}}}
+     templates and the order in which the narration of that slide must mention the parts (one sentence per part, in this order):
+       refraction (6): the two media (air and glass/water) and the surface; the normal; the incident ray; the refracted ray; the angle of incidence; the angle of refraction.
+         params: medium glass or water; direction into_denser (air to glass/water, bends towards the normal) or into_rarer (glass/water to air, bends away); angle 10 to 75.
+       photosynthesis (6): sunlight; water from the roots; carbon dioxide; chlorophyll; oxygen released; glucose made.
+       water_cycle (5): the sun heating the sea; evaporation; condensation (clouds); precipitation; collection (flowing back to the sea).
+       leaf_section (6): upper epidermis; palisade cells; spongy cells; lower epidermis; stomata and guard cells; chloroplasts.
+     The picture and its labels are drawn for you in the lesson language. Do not describe the drawing in the visual_instruction beyond naming the template.
    Without a layout, the bullets are shown one by one. Keep every label short (1 to 4 words) and in the lesson language. List the items in the order the narrator mentions them.
 
 RULES

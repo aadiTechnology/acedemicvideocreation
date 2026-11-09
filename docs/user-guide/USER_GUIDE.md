@@ -154,6 +154,27 @@ Keep labels short (1 to 4 words) and list items in the order the narrator says t
 ![Cycle](img/anim-cycle.png)
 ![Compare](img/anim-compare.png)
 
+## 8. Built-in science pictures
+
+For some topics a slide can show **the actual thing being taught** as an animated picture, drawn for you with labels in the lesson language. Its parts appear one by one as the narrator mentions them. Available now:
+
+| Picture (`template`) | Parts, in the order they appear |
+|---|---|
+| `refraction` | the two media, the normal, the incident ray, the refracted ray, the angle of incidence, the angle of refraction. The angles come from the physics: towards the normal into glass or water, away from it into air |
+| `photosynthesis` | sunlight, water from the roots, carbon dioxide, chlorophyll, oxygen, glucose |
+| `water_cycle` | the sun heating the sea, evaporation, condensation, precipitation, collection |
+| `leaf_section` | upper epidermis, palisade cells, spongy cells, lower epidermis, stomata, chloroplasts |
+
+The ChatGPT prompt already knows them. A slide uses one like this in `lesson_plan.json`:
+`{"slide": 3, "headline": "Refraction: air to glass", "layout": "illustration", "diagram": {"template": "refraction", "params": {"medium": "glass", "direction": "into_denser", "angle": 50}}}`
+
+**Write the narration of that slide with one sentence per part, in the order above**, because each part appears when the narrator reaches its sentence. A complete example lesson is in `docs/user-guide/sample/refraction/`. The Hindi and Marathi labels need a subject-expert review.
+
+![Refraction in a finished video](img/illus-refraction-real-video.png)
+![Photosynthesis](img/illus-photosynthesis-en-IN.png)
+![Water cycle](img/illus-water_cycle-en-IN.png)
+![Inside a leaf](img/illus-leaf_section-en-IN.png)
+
 ## Videos for each part
 
 | Part | Video |
@@ -163,7 +184,8 @@ Keep labels short (1 to 4 words) and list items in the order the narrator says t
 | From content to approval (sections 3 to 5) | `docs/demos/sprint-5-import-review.mp4` |
 | Make the video (section 6) | `docs/demos/sprint-6-integration.mp4` |
 | Animated slides (section 7) | `docs/demos/sprint-9-animated-slides.mp4` |
-| **Everything above in one video (about 10 minutes)** | `docs/demos/full-user-guide.mp4` |
+| Built-in science pictures (section 8) | `docs/demos/sprint-10-illustrations.mp4` |
+| **Everything above in one video (about 12 minutes)** | `docs/demos/full-user-guide.mp4` |
 
 
 ## Rebuilding the screens and videos

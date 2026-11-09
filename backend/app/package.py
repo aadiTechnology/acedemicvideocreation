@@ -170,7 +170,8 @@ def _parse_csv(raw: bytes, issues: list[Issue], assets: set[str]) -> list[dict]:
     return slides
 
 
-LAYOUTS = ("bullets", "flow", "equation", "cycle", "compare")
+LAYOUTS = ("bullets", "flow", "equation", "cycle", "compare", "illustration")
+ILLUSTRATIONS = ("refraction", "photosynthesis", "water_cycle", "leaf_section")
 
 
 def _texts(value, low: int, high: int) -> bool:
@@ -194,6 +195,17 @@ def _diagram_problem(item: dict) -> str | None:
         return "equation needs diagram.terms: 3 to 9 items, for example [\"Carbon dioxide\", \"+\", \"Water\", \"→\", \"Glucose\"]."
     if layout == "cycle" and not _texts(diagram.get("nodes"), 3, 6):
         return "cycle needs diagram.nodes: 3 to 6 short labels."
+    if layout == "illustration":
+        if diagram.get("template") not in ILLUSTRATIONS:
+            return f"illustration needs diagram.template, one of: {', '.join(ILLUSTRATIONS)}."
+        params, labels = diagram.get("params", {}), diagram.get("labels", {})
+        if not isinstance(params, dict) or not isinstance(labels, dict) or not all(isinstance(v, str) and 0 < len(v) <= 60 for v in labels.values()):
+            return "illustration params and labels must be objects; labels are short texts."
+        if params.get("medium", "glass") not in ("glass", "water") or params.get("direction", "into_denser") not in ("into_denser", "into_rarer"):
+            return "refraction params: medium is glass or water, direction is into_denser or into_rarer."
+        if "angle" in params and not (isinstance(params["angle"], (int, float)) and 10 <= params["angle"] <= 75):
+            return "refraction params: angle is a number between 10 and 75 degrees."
+        return None
     if layout == "compare":
         for side in ("left", "right"):
             part = diagram.get(side)
