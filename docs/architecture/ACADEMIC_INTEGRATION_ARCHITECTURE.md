@@ -11,7 +11,7 @@ Browser --HTTPS--> academic-web (static React) --> academic-api (FastAPI)
 
 ## Stack proposal (to be confirmed in Sprint 4)
 
-Backend FastAPI + SQLAlchemy + Alembic (matches the engine's Python stack). Frontend React + Vite + TypeScript. Database: PostgreSQL. The existing Coolify PostgreSQL is used only after the owner confirms which instance and database, and no database is created silently. Local development uses SQLite or a Docker Postgres.
+Backend FastAPI + SQLAlchemy + Alembic (matches the engine's Python stack). Frontend React + Vite + TypeScript. Database: PostgreSQL, on the same server as Aadi Identity and Project Tracker (see "Shared platform"). No SQLite.
 
 ## Data model (Sprint 4)
 
@@ -35,7 +35,10 @@ Backend FastAPI + SQLAlchemy + Alembic (matches the engine's Python stack). Fron
 | Variable | Purpose |
 |---|---|
 | `APP_ENV`, `APP_BASE_URL` | environment and public URL |
-| `DATABASE_URL` | PostgreSQL connection |
+| `DATABASE_URL` | PostgreSQL connection (Academic database on the shared server, runtime role) |
+| `MIGRATION_DATABASE_URL` | migrator role, used only by the migration command |
+| `IDENTITY_ISSUER_URL`, `IDENTITY_CLIENT_ID`, `IDENTITY_CLIENT_SECRET` | OIDC sign-in through Aadi Identity |
+| `IDENTITY_PRODUCT_KEY` | `academics` |
 | `VIDEO_ENGINE_URL` | internal engine URL, e.g. `http://engine-api:8000` |
 | `VIDEO_ENGINE_API_KEY` | service-to-service secret |
 | `VIDEO_ENGINE_TIMEOUT_SECONDS` | client timeout |
@@ -44,9 +47,16 @@ Backend FastAPI + SQLAlchemy + Alembic (matches the engine's Python stack). Fron
 
 `.env.coolify` in this folder is not usable as is. It was copied from another application (project-tracker/SpendOS): it holds JWT, SMTP and Postgres secrets and a Coolify token for a different app, and lacks every engine variable above. It is git-ignored. A clean `.env.example` is added in Sprint 4. Rotate the credentials in that file because they have been exposed in this working session.
 
-## Access protection
+## Shared platform: Aadi Identity and one PostgreSQL server
 
-The MVP has no login. It must not be public. Recommended: Coolify basic auth or IP allow-list on the Academic domain. Owner to confirm the method before Sprint 8.
+Academic Video Creation is a second product on the multitenant platform (`aadiTechnology/identity`, OIDC, currently serving Project Tracker). It does not get its own login.
+
+- **Sign-in:** OIDC authorization code with PKCE against Identity. Register product key `academics` and client `academics-web` (`register-product`, `register-client` CLI) with the Academic redirect and logout URIs. Identity's redirect rule, product hub and switcher then work for Academic like any other product.
+- **Tenancy:** every Academic table carries `tenant_id` (the Identity company UUID, claim `tid`). Every query and every engine submission is scoped by the tenant of the signed-in user. Identity user ids (`sub`) are stored as `created_by`/`reviewed_by`. Tenants buy Academic through an Identity subscription for product `academics`; no subscription means no access.
+- **Roles:** Identity answers who you are and which products you may open. Roles stay inside each product (decision D3), so Academic keeps a small role set (content operator, reviewer, production operator) mapped from its own tables. This is a deliberate change to the PRD's "no login, no RBAC" non-goal, and it is allowed because the PRD permits reusing an existing authentication facility. It also removes the need for the IP or basic-auth restriction on the Academic UI.
+- **Engine stays service-to-service.** The Video Engine never sees end users and never talks to Identity. Academic passes `caller.tenant_ref` (opaque, the tenant UUID) in the manifest so jobs and assets can be correlated per tenant. No metering or billing.
+- **One PostgreSQL server, separate databases.** Identity, Project Tracker, Academic and the Video Engine all run on the same PostgreSQL server (the existing Coolify one), each in its own database (`aadi_academic`, `aadi_video_engine`) with its own roles: a runtime role without DDL rights and a migrator role, matching `dev-environment/` conventions. Products never read each other's tables; they link only through Identity UUIDs stored in their own columns. Sharing the server satisfies "same PostgreSQL"; sharing tables would break the PRD rule against cross-service database coupling and the tenant isolation Identity depends on. No database or role is created until the owner confirms the server and approves.
+- **Local development:** extend `dev-environment/bootstrap.ps1` (it already creates databases and roles) with `aadi_academic_dev` and `aadi_video_engine_dev`, instead of a separate setup.
 
 ## Proposed tree
 
@@ -62,4 +72,4 @@ acedemicvideocreation/
 
 ## Risks
 
-Package validation complexity (Sprint 5). Colab manual step adds an operator action per video. PostgreSQL ownership unconfirmed. Slide visual quality is an engine-side risk that the POC will expose.
+Package validation complexity (Sprint 5). Colab manual step adds an operator action per video. Identity registration needs a platform admin, and the shared PostgreSQL server details are unconfirmed. Slide visual quality is an engine-side risk that the POC will expose.

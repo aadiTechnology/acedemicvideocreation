@@ -5,6 +5,7 @@ Per-sprint limits: 20 new and 10 modified files unless the owner approves an exc
 | Sprint | Scope | Main files (approx.) | Acceptance |
 |---|---|---|---|
 | 4 Foundation | Repo scaffold, FastAPI, React, Alembic, CRUD for class/subject/chapter/topic/lesson/language version, UUID ids, `.env.example`, README | ~18 new | Create a lesson with en, hi and mr versions; API tests and frontend build green |
+| 4b Identity sign-in | Register product `academics` and client in Identity; OIDC login with PKCE; `tenant_id` on all tables and tenant-scoped queries; subscription check; minimal Academic roles; tenant-isolation tests; local bootstrap databases | ~12 new, 6 modified | Two tenants cannot see each other's lessons; user without an `academics` subscription is refused; login through the Identity hub works |
 | 5 Import and review | ZIP/CSV/JSON importer, canonical 5-column CSV, safe archive handling, size and encoding checks, actionable errors, prompt-spec generator for ChatGPT Free, review states (Draft, In Review, Changes Required, Approved, Rejected), approval gate | ~20 new, 8 modified (exception likely) | Invalid packages rejected with clear errors; reviewer approves; unapproved version cannot render |
 | 6 Integration | `engine_client`, pinned contract, job mapping, idempotent submit, status polling, retry, asset copy, preview and download, Colab upload step, error mapping | ~16 new, 6 modified (plus engine-side fixes in the engine repo if needed) | Create, approve, render, preview and download with no manual file copying; duplicate click gives one job; restart keeps the job |
 | 7 POC | Three Class 7 Science Photosynthesis videos (en, hi, mr), about 5 minutes each | content packages, test report | Script, pronunciation, subtitle sync, visuals, MP4 validity, duration, resolution and reproducibility checked; unvalidated languages stated as such |
@@ -17,6 +18,6 @@ New: `README.md`, `.env.example`, `backend/app/main.py`, `backend/app/config.py`
 ## Owner decisions needed (defaults)
 
 1. Backend and frontend stack: FastAPI + React (default yes).
-2. PostgreSQL: which existing Coolify instance and database to use. Until then, a local Docker Postgres in development. No SQLite.
-3. Access protection for the unauthenticated MVP: Coolify basic auth or IP allow-list.
+2. PostgreSQL: the shared Coolify server, with separate `aadi_academic` and `aadi_video_engine` databases and roles. Please confirm the server and that I may request the databases and roles. No SQLite.
+3. Identity: who can register the `academics` product and client, and the production Academic domain for the redirect URIs. Access protection is replaced by Identity login.
 4. A new GitHub repo remote is set to the URL you gave; first push needs your confirmation.
