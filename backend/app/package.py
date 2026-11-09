@@ -180,9 +180,15 @@ def _texts(value, low: int, high: int) -> bool:
     return items is not None and low <= len(items) <= high and all(isinstance(x, str) and x.strip() and len(x) <= 60 for x in items)
 
 
+def _terms_ok(value) -> bool:
+    return isinstance(value, list) and len(value) <= 20 and all(isinstance(t, str) and 0 < len(t.strip()) <= 40 for t in value)
+
+
 def _diagram_problem(item: dict) -> str | None:
     """Check the optional animation layout of one slide. Returns a plain-words problem, or None."""
     layout = item.get("layout", "bullets")
+    if "key_terms" in item and not _terms_ok(item["key_terms"]):
+        return "key_terms must be a list of up to 20 short terms (each up to 40 characters)."
     if layout not in LAYOUTS:
         return f"layout must be one of {', '.join(LAYOUTS)}."
     diagram = item.get("diagram")
@@ -266,6 +272,8 @@ def _parse_plan(raw: bytes, language: str, issues: list[Issue], name: str = "les
     for key in ("learning_objectives", "source_references", "quiz"):
         if key in plan and not isinstance(plan[key], list):
             issues.append(_err("plan_shape", f"{name}: {key} must be a list."))
+    if "key_terms" in plan and not _terms_ok(plan["key_terms"]):
+        issues.append(_err("plan_shape", f"{name}: key_terms must be a list of up to 20 short terms (each up to 40 characters)."))
     if isinstance(plan.get("learning_objectives"), list) and not all(isinstance(x, str) for x in plan["learning_objectives"]):
         issues.append(_err("plan_shape", f"{name}: learning_objectives must be a list of text."))
     if "slides" in plan:

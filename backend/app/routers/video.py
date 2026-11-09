@@ -26,6 +26,7 @@ router = APIRouter()
 operator = require_roles("production_operator")
 
 PROFILES = ("1080p24", "720p24", "480p24")
+SPEEDS = {"slow": "-15%", "normal": "0%", "fast": "+15%"}  # narration speed presets -> Azure prosody rate
 MAX_AUDIO_BYTES = 200 * 1024 * 1024
 FRIENDLY = {
     "engine_unavailable": "The video service is not reachable right now. Try again in a minute.",
@@ -45,6 +46,7 @@ class GenerateIn(BaseModel):
     profile: str = "480p24"
     subtitles: bool = True
     style: str = "animated"  # animated slides (layouts, diagrams, highlighting) or plain
+    speed: str = "normal"  # narration speed: slow, normal or fast
     rerender: bool = False
 
 
@@ -93,7 +95,7 @@ def _manifest(version: m.LessonVersion, user: CurrentUser, key: str, s: dict) ->
         "contract_version": CONTRACT_VERSION,
         "caller": {"application_id": APPLICATION_ID, "tenant_ref": user.tenant_id, "external_ref": version.id},
         "idempotency_key": key, "language": version.language,
-        "tts": {"provider": s["provider"], "mode": s["mode"], **({"voice": s["voice"]} if s.get("voice") else {})},
+        "tts": {"provider": s["provider"], "mode": s["mode"], "rate": SPEEDS.get(s.get("speed", "normal"), "0%"), **({"voice": s["voice"]} if s.get("voice") else {})},
         "render": {"profile": s["profile"], "style": s.get("style", "plain"), "subtitles": {"enabled": s["subtitles"]}},
     }
 
@@ -208,12 +210,14 @@ def generate(version_id: str, body: GenerateIn, request: Request, db: Session = 
         raise HTTPException(422, f"Unknown output profile. Use one of: {', '.join(PROFILES)}.")
     if body.style not in ("animated", "plain"):
         raise HTTPException(422, "Unknown slide style. Use animated or plain.")
+    if body.speed not in SPEEDS:
+        raise HTTPException(422, "Unknown narration speed. Use slow, normal or fast.")
     if body.provider not in ("colab", "azure"):
         raise HTTPException(422, "Unknown voice option. Use colab or azure.")
     mode = body.mode or ("manual" if body.provider == "colab" else "api")
     if (body.provider, mode) not in (("colab", "manual"), ("colab", "tunnel"), ("azure", "api")):
         raise HTTPException(422, "That voice option and mode do not go together.")
-    settings = {"provider": body.provider, "mode": mode, "voice": body.voice, "profile": body.profile, "subtitles": body.subtitles, "style": body.style}
+    settings = {"provider": body.provider, "mode": mode, "voice": body.voice, "profile": body.profile, "subtitles": body.subtitles, "style": body.style, **({"speed": body.speed} if body.speed != "normal" else {})}
     base = hashlib.sha256(json.dumps([version.id, version.package_sha256, settings], sort_keys=True).encode()).hexdigest()
     runs = db.scalar(select(func.count()).select_from(m.VideoJob).where(m.VideoJob.version_id == version.id, m.VideoJob.idempotency_key.like(f"lv-{base[:24]}-%"))) or 0
     key = f"lv-{base[:24]}-{runs if body.rerender else max(runs - 1, 0)}"

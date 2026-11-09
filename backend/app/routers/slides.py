@@ -35,6 +35,7 @@ class SlideIn(BaseModel):
     bullets: list[str] = []
     layout: str = "bullets"
     diagram: dict | None = None
+    key_terms: list[str] = []
 
 
 class PreviewIn(BaseModel):
@@ -50,6 +51,8 @@ def _plan_entry(slide: SlideIn, number: int) -> dict:
         entry["layout"] = slide.layout
     if slide.diagram:
         entry["diagram"] = slide.diagram
+    if slide.key_terms:
+        entry["key_terms"] = [t.strip() for t in slide.key_terms if t.strip()]
     return entry
 
 
@@ -132,7 +135,7 @@ def preview_slide(version_id: str, number: int, body: PreviewIn, request: Reques
     lesson = db.get(m.Lesson, v.lesson_id)
     payload = {"language": v.language, "title": (v.lesson_plan or {}).get("title") or lesson.title, "total": len(v.slides or []),
                "slide": {"Slide": number, "Module": row["module"], "voice_text": row["voice_text"], "subtitle_text": row["subtitle_text"]},
-               "plan": entry, "at": body.at, "profile": body.profile, "subtitles": body.subtitles}
+               "plan": entry, "key_terms": (v.lesson_plan or {}).get("key_terms", []), "at": body.at, "profile": body.profile, "subtitles": body.subtitles}
     png = _engine_call(lambda: client_of(request).preview(payload))
     return Response(png, media_type="image/png", headers={"Cache-Control": "no-store"})
 

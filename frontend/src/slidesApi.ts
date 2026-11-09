@@ -1,9 +1,9 @@
 import { ApiError, Slide, call } from "./api";
 
 export interface LayoutInfo { name: string; title: string; purpose: string; required_diagram_keys: string[]; example: { bullets?: string[]; diagram?: unknown } }
-export interface SlidePlan { slide: number; headline: string; bullets?: string[]; layout?: string; diagram?: unknown }
+export interface SlidePlan { slide: number; headline: string; bullets?: string[]; layout?: string; diagram?: unknown; key_terms?: string[] }
 export interface Recommendation { layout: string; score: number; reason: string }
-export interface SlideDraft { headline: string; bullets: string[]; layout: string; diagram: unknown | null }
+export interface SlideDraft { headline: string; bullets: string[]; layout: string; diagram: unknown | null; key_terms: string[] }
 
 export const slides = {
   layouts: () => call<{ layouts: LayoutInfo[] }>("GET", "/layouts"),

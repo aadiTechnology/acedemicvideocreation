@@ -112,3 +112,12 @@ def test_recommendation_carries_the_lesson_context(client, engine):
 
 def test_layout_list_is_served(client):
     assert [l["name"] for l in client.get("/api/layouts").json()["layouts"]] == ["bullets", "timeline"]
+
+
+def test_key_terms_are_saved_validated_and_sent_to_preview(client, engine):
+    vid = approved_version(client)
+    assert client.put(f"/api/lesson-versions/{vid}/slides/1", json={**GOOD, "key_terms": ["refraction", "normal"]}, headers=OP).status_code == 200
+    assert client.get(f"/api/lesson-versions/{vid}/slides/1").json()["plan"]["key_terms"] == ["refraction", "normal"]
+    assert client.put(f"/api/lesson-versions/{vid}/slides/1", json={**GOOD, "key_terms": ["x" * 41]}, headers=OP).status_code == 422
+    client.post(f"/api/lesson-versions/{vid}/slides/1/preview", json={})
+    assert engine.previews[-1]["plan"]["key_terms"] == ["refraction", "normal"]

@@ -211,3 +211,8 @@ Layout choice: the video engine can recommend layouts (`POST /api/v1/layouts/rec
 On the review page, a content operator sees **Edit** at the end of each slide row. The editor has the layout, headline, bullets and diagram (JSON; picking a layout fills an example). **Preview** shows the slide as it will appear in the video; the slider chooses the moment. **Suggest a layout** lists up to three layouts with the reason for each; a click applies one. **Save slide** checks the slide with the import rules: an invalid slide is refused with the reason. Saving changes the content, so an approved version becomes a draft and needs a new review.
 
 If an import says the language in `lesson_plan.json` does not match (for example `'en-IN'` in a Hindi version), each language version needs its own files: use **Show ChatGPT prompt** in that version.
+
+## 11. Captions and narration speed
+
+- Captions are larger (54 px) with at most two lines. Important words listed in `key_terms` (in `lesson_plan.json`, or per slide in the slide editor) are highlighted in gold while they are on screen. The ChatGPT prompt asks for `key_terms`.
+- In **Make the video**, **Narration speed** is slow, normal or fast. Quality now defaults to 480p and the voice to Azure.

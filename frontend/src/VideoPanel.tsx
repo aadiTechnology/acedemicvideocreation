@@ -18,6 +18,7 @@ export default function VideoPanel({ versionId, approved, me }: { versionId: str
   const [profile, setProfile] = useState("480p24");
   const [subtitles, setSubtitles] = useState(true);
   const [style, setStyle] = useState("animated");
+  const [speed, setSpeed] = useState("normal");
   const [audio, setAudio] = useState<File | null>(null);
   const can = me.roles.includes("admin") || me.roles.includes("production_operator");
 
@@ -60,6 +61,11 @@ export default function VideoPanel({ versionId, approved, me }: { versionId: str
               <option value="animated">Animated (recommended)</option><option value="plain">Plain</option>
             </select>
           </label>
+          <label>Narration speed
+            <select value={speed} onChange={(e) => setSpeed(e.target.value)}>
+              <option value="slow">Slow</option><option value="normal">Normal</option><option value="fast">Fast</option>
+            </select>
+          </label>
           <label>Quality
             <select value={profile} onChange={(e) => setProfile(e.target.value)}>
               <option value="480p24">Standard (480p, fastest)</option><option value="720p24">HD (720p)</option><option value="1080p24">Full HD (1080p)</option>
@@ -68,7 +74,7 @@ export default function VideoPanel({ versionId, approved, me }: { versionId: str
           <label style={{ gridAutoFlow: "column", alignItems: "center", display: "inline-flex", gap: 6 }}>
             <input type="checkbox" style={{ minWidth: 0 }} checked={subtitles} onChange={(e) => setSubtitles(e.target.checked)} />Subtitles
           </label>
-          <button className="primary" disabled={busy || !(s?.can_generate ?? true)} onClick={() => run(() => video.generate(versionId, { provider, profile, subtitles, style, rerender: job?.state === "succeeded" }))}>
+          <button className="primary" disabled={busy || !(s?.can_generate ?? true)} onClick={() => run(() => video.generate(versionId, { provider, profile, subtitles, style, speed, rerender: job?.state === "succeeded" }))}>
             {job?.state === "succeeded" ? "Make the video again" : "Generate video"}
           </button>
         </div>

@@ -248,3 +248,12 @@ def test_wrong_engine_key_is_not_leaked(engine):
         r = gen(c, vid)
         assert "wrong-key" not in r.text and FakeEngine.KEY not in r.text
         assert r.json()["job"]["state"] == "failed"
+
+
+def test_narration_speed_maps_to_the_engine_rate(engine, client):
+    vid = approved_version(client)
+    assert client.post(f"/api/lesson-versions/{vid}/video", json={"provider": "colab", "speed": "turbo"}, headers=PROD).status_code == 422
+    r = client.post(f"/api/lesson-versions/{vid}/video", json={"provider": "colab", "speed": "slow"}, headers=PROD)
+    assert r.status_code in (200, 201, 202), r.text
+    sent = [j for j in engine.jobs.values()][0]["manifest"]
+    assert sent["tts"]["rate"] == "-15%"

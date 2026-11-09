@@ -174,9 +174,10 @@ OUTPUT: produce these files and nothing else.
    - visual_instruction: what the slide should show (diagram, labelled picture, animation idea); do not name image files
    Use 8 to 14 slides. Quote any cell that contains a comma. Do not add other columns.
 2. lesson_plan.json with this shape:
-   {{"title": "...", "language": "{v.language}", "learning_objectives": ["..."], "source_references": ["textbook name and page"],
+   {{"title": "...", "language": "{v.language}", "learning_objectives": ["..."], "source_references": ["textbook name and page"], "key_terms": ["3 to 8 important terms exactly as they appear in the narration"],
      "slides": [{{"slide": 1, "headline": "3 to 6 words, the slide title", "bullets": ["2 to 4 short key points, 3 to 8 words each"]}}],
      "quiz": [{{"question": "...", "options": ["...", "..."], "answer": "..."}}]}}
+   "key_terms" are the important words of the lesson; they are highlighted in the captions when they appear. Use each term exactly as written in the narration.
    Give one "slides" entry for every slide. This short wording is what appears on the slide; the narration appears as captions.
    The video is animated: items appear one by one as the narrator reaches them. Add a "layout" to a slide when a picture explains it better than bullets:
    - "flow": {{"layout": "flow", "diagram": {{"steps": [{{"label": "Sunlight"}}, {{"label": "Water"}}, {{"label": "Glucose", "role": "output"}}]}}}}   (2 to 5 steps, arrows are drawn between them)

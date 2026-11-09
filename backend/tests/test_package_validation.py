@@ -262,3 +262,11 @@ def test_e4_layouts_are_validated():
     ]
     for slide in bad:
         assert "plan_diagram" in codes(base + [_plan(slide)]), slide
+
+
+def test_key_terms_are_validated():
+    base = [("lesson.csv", csv_bytes([ROW]))]
+    assert ok(base + [("lesson_plan.json", json.dumps({"key_terms": ["refraction", "normal"], "slides": [{"slide": 1, "headline": "H", "key_terms": ["ray"]}]}).encode())])
+    for bad in ({"key_terms": "refraction"}, {"key_terms": ["x" * 41]}, {"key_terms": [""]}, {"key_terms": ["a"] * 21}):
+        assert "plan_shape" in codes(base + [("lesson_plan.json", json.dumps(bad).encode())]), bad
+    assert "plan_diagram" in codes(base + [_plan({"key_terms": "ray"})])

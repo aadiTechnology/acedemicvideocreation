@@ -8,6 +8,7 @@ export default function SlideEditor({ versionId, row, onSaved, onClose }: { vers
   const [headline, setHeadline] = useState("");
   const [bullets, setBullets] = useState("");
   const [diagram, setDiagram] = useState("");
+  const [terms, setTerms] = useState("");
   const [at, setAt] = useState(0.92);
   const [img, setImg] = useState("");
   const [recs, setRecs] = useState<Recommendation[]>([]);
@@ -26,6 +27,7 @@ export default function SlideEditor({ versionId, row, onSaved, onClose }: { vers
         setHeadline(s.plan.headline ?? row.module);
         setBullets((s.plan.bullets ?? []).join("\n"));
         setDiagram(s.plan.diagram ? JSON.stringify(s.plan.diagram, null, 2) : "");
+        setTerms((s.plan.key_terms ?? []).join(", "));
       } catch (e) { setErr((e as ApiError).message); }
     })();
   }, [versionId, row.slide, row.module]);
@@ -36,7 +38,7 @@ export default function SlideEditor({ versionId, row, onSaved, onClose }: { vers
     if (diagram.trim()) {
       try { parsed = JSON.parse(diagram); } catch { setErr("The diagram is not valid JSON."); return null; }
     }
-    return { headline: headline.trim(), bullets: bullets.split("\n").map((b) => b.trim()).filter(Boolean), layout, diagram: parsed };
+    return { headline: headline.trim(), bullets: bullets.split("\n").map((b) => b.trim()).filter(Boolean), layout, diagram: parsed, key_terms: terms.split(",").map((t) => t.trim()).filter(Boolean) };
   }
   function pickLayout(name: string) {
     setLayout(name);
@@ -75,6 +77,7 @@ export default function SlideEditor({ versionId, row, onSaved, onClose }: { vers
           {info && <p className="muted">{info.purpose}{info.required_diagram_keys.length ? ` Needs: ${info.required_diagram_keys.join(", ")}.` : ""}</p>}
           <label>Headline<input value={headline} maxLength={100} onChange={(e) => setHeadline(e.target.value)} /></label>
           <label>Bullets (one per line)<textarea rows={4} value={bullets} onChange={(e) => setBullets(e.target.value)} /></label>
+          <label>Key terms for this slide (comma separated, highlighted in captions)<input value={terms} onChange={(e) => setTerms(e.target.value)} /></label>
           <label>Diagram (JSON, only for layouts that need it)<textarea rows={8} spellCheck={false} value={diagram} onChange={(e) => setDiagram(e.target.value)} /></label>
           <div className="row">
             <button className="primary" disabled={busy} onClick={recommend}>Suggest a layout</button>
