@@ -17,6 +17,6 @@ New: `README.md`, `.env.example`, `backend/app/main.py`, `backend/app/config.py`
 ## Owner decisions needed (defaults)
 
 1. Backend and frontend stack: FastAPI + React (default yes).
-2. PostgreSQL: which existing Coolify instance and database to use. Until then, SQLite or local Postgres in development.
+2. PostgreSQL: which existing Coolify instance and database to use. Until then, a local Docker Postgres in development. No SQLite.
 3. Access protection for the unauthenticated MVP: Coolify basic auth or IP allow-list.
 4. A new GitHub repo remote is set to the URL you gave; first push needs your confirmation.

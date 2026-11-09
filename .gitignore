@@ -14,7 +14,6 @@ build/
 .pytest_cache/
 
 # Local data and generated media
-*.sqlite3
 *.db
 storage/
 uploads/
