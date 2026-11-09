@@ -20,3 +20,7 @@ uploads/
 *.mp4
 *.mp3
 *.wav
+
+# Demo videos are built locally, not committed
+docs/demos/*.mp4
+frontend/dist/
