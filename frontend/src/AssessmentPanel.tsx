@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { ApiError, call } from "./api";
+import { slides } from "./slidesApi";
 
 type Kind = "multiple_choice" | "image" | "diagram" | "conceptual";
 interface Question { id: string; position: number; kind: Kind; prompt: string; options: string[]; image_file: string | null; slide: number | null; status: "draft" | "approved";
@@ -88,11 +89,19 @@ export default function AssessmentPanel({ versionId }: { versionId: string }) {
           </label>
           <label>Question<textarea rows={2} maxLength={400} value={draft.prompt} onChange={(e) => setDraft({ ...draft, prompt: e.target.value })} /></label>
           {pictureQuestion && (
-            <label>Picture (add pictures in the slide editor, under Pictures and clips)
-              <select value={draft.image_file} onChange={(e) => setDraft({ ...draft, image_file: e.target.value })}>
-                <option value="">Choose a picture</option>{data.pictures.map((p) => <option key={p} value={p}>{p}</option>)}
-              </select>
-            </label>
+            <div>
+              <label>Picture
+                <select value={draft.image_file} onChange={(e) => setDraft({ ...draft, image_file: e.target.value })}>
+                  <option value="">{data.pictures.length ? "Choose a picture" : "No pictures in this lesson yet: add one below"}</option>{data.pictures.map((p) => <option key={p} value={p}>{p}</option>)}
+                </select>
+              </label>
+              <label>Add a picture to the lesson (PNG or JPEG, up to 5 MB)
+                <input type="file" accept=".png,.jpg,.jpeg" onChange={(e) => {
+                  const f = e.target.files?.[0]; e.target.value = "";
+                  if (f) run(async () => { const r = await slides.addMedia(versionId, f); setDraft((d) => (d ? { ...d, image_file: r.file } : d)); }, "Picture added and chosen. Adding a picture to an approved lesson sends it back to draft, like any change to its content.");
+                }} />
+              </label>
+            </div>
           )}
           {draft.kind !== "conceptual" ? (
             <div>
