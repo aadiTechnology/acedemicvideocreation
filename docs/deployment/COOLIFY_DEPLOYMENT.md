@@ -71,3 +71,5 @@ By default (`STORAGE_PROVIDER=local`) videos stay on the `academic_storage` volu
 - If the upload fails, the video job fails with a clear message ("The file storage is not reachable right now") and **Try again** collects the finished video again without rendering it again.
 - The browser plays the video from a signed link, so a link older than its expiry stops working; the page asks for a new one each time it loads.
 - Do not make the bucket public. Optional: add a bucket lifecycle rule to keep only the last version of each file.
+
+**Automatic move of older videos.** With `STORAGE_PROVIDER=b2`, the app moves any video still on the local volume into the bucket in the background each time it starts (`B2_MOVE_EXISTING_ON_START`, on by default; set it to 0 to disable). It is repeatable, skips what is already in the bucket, and deletes a local file only after the upload is confirmed. The result is logged as `move-to-b2`. `python -m app.tools.move_to_b2` still works by hand.

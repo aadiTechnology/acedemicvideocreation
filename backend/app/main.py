@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import threading
 import uuid
 
 from fastapi import FastAPI, Request
@@ -19,6 +20,20 @@ from app.routers import admin, lessons, slides, structure, versions, video
 logger = logging.getLogger("academic")
 
 
+def _move_existing(store) -> None:
+    """Background, repeatable: videos still on the local volume go to the bucket; a local file is deleted only after its upload is confirmed."""
+    from app.tools.move_to_b2 import move
+    gen = database.get_db()
+    try:
+        session = next(gen)
+        stats = move(store, session)
+        logger.info("move-to-b2: %s", stats)
+    except Exception:  # noqa: BLE001 - this must never stop the app
+        logger.exception("move-to-b2 failed")
+    finally:
+        gen.close()
+
+
 def create_app(settings: Settings | None = None, oidc_http=None, engine_http=None, object_store=None) -> FastAPI:
     settings = settings or load_settings()
     app = FastAPI(title="Aadi Academic Video Creation", version="0.1.0")
@@ -27,6 +42,8 @@ def create_app(settings: Settings | None = None, oidc_http=None, engine_http=Non
     app.state.store = object_store if object_store is not None else make_store(settings)  # None: files stay on the local volume
     if settings.database_url:
         database.init_db(settings.database_url)
+    if app.state.store is not None and settings.b2_move_on_start and settings.database_url:
+        threading.Thread(target=_move_existing, args=(app.state.store,), name="move-to-b2", daemon=True).start()
 
     @app.middleware("http")
     async def correlation(request: Request, call_next):

@@ -35,6 +35,7 @@ class Settings:
     b2_bucket: str = ""
     b2_region: str = ""
     b2_url_expiry: int = 900          # seconds a playback or download link stays valid
+    b2_move_on_start: bool = False    # on start, move videos still on the local volume into the bucket (background, repeatable)
 
     @property
     def is_production(self) -> bool:
@@ -64,6 +65,7 @@ def load_settings(env=None) -> Settings:
         b2_bucket=e.get("B2_BUCKET", "").strip(),
         b2_region=e.get("B2_REGION", "").strip(),
         b2_url_expiry=int(e.get("B2_URL_EXPIRY_SECONDS", "900")),
+        b2_move_on_start=e.get("B2_MOVE_EXISTING_ON_START", "1").strip().lower() in ("1", "true", "yes"),
     )
     if s.storage_provider not in ("local", "b2"):
         raise RuntimeError("STORAGE_PROVIDER must be local or b2.")

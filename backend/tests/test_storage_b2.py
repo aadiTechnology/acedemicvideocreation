@@ -183,3 +183,30 @@ def test_existing_local_videos_can_be_moved_and_the_move_is_repeatable(engine, s
         client.app.state.store = store  # the same app, now with the bucket configured
         r = client.get(f"/api/video-jobs/{jid}/download")
         assert r.status_code == 302 and "b2.example" in r.headers["location"]
+
+
+def test_start_moves_existing_local_videos_in_the_background(engine, store):
+    import time
+    from dataclasses import replace
+    settings = make_settings(video_engine_url="http://engine.test", video_engine_api_key=FakeEngine.KEY)
+    with TestClient(create_app(settings, engine_http=engine.http), follow_redirects=False) as client:  # a store-less app: files stay local
+        vid = approved_version(client)
+        s = run_to_success(client, engine, vid)
+    with TestClient(create_app(replace(settings, b2_move_on_start=True), engine_http=engine.http, object_store=store), follow_redirects=False) as client2:
+        for _ in range(50):
+            if len(store.objects) == 2:
+                break
+            time.sleep(0.1)
+        assert len(store.objects) == 2
+        r = client2.get(f"/api/video-jobs/{s['job']['id']}/download")
+        assert r.status_code == 302 and "b2.example" in r.headers["location"]
+
+
+def test_move_on_start_is_off_without_the_flag(engine, store):
+    import time
+    settings = make_settings(video_engine_url="http://engine.test", video_engine_api_key=FakeEngine.KEY)
+    with TestClient(create_app(settings, engine_http=engine.http), follow_redirects=False) as client:
+        run_to_success(client, engine, approved_version(client))
+    with TestClient(create_app(settings, engine_http=engine.http, object_store=store)):
+        time.sleep(0.5)
+        assert store.objects == {}

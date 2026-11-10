@@ -29,6 +29,7 @@ services:
       - B2_BUCKET=${B2_BUCKET:-}
       - B2_REGION=${B2_REGION:-}
       - B2_URL_EXPIRY_SECONDS=${B2_URL_EXPIRY_SECONDS:-900}
+      - B2_MOVE_EXISTING_ON_START=${B2_MOVE_EXISTING_ON_START:-1}
     volumes:
       - academic_storage:/data
     networks:
