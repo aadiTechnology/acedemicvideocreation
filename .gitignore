@@ -24,3 +24,8 @@ uploads/
 # Demo videos are built locally, not committed
 docs/demos/*.mp4
 frontend/dist/
+
+# never commit credentials saved next to the code
+BlackBazekeyID.txt
+*keyID*.txt
+*applicationkey*.txt
