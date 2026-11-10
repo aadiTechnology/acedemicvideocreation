@@ -120,7 +120,7 @@ export default function SlideEditor({ versionId, row, onSaved, onClose }: { vers
               <label>Add a picture or clip<input type="file" accept=".png,.jpg,.jpeg,.mp4" disabled={busy} onChange={(e) => { addFile(e.target.files?.[0]); e.target.value = ""; }} /></label>
               {files.length > 0 && <ul>{files.map((f) => (
                 <li key={f.file}><code>{f.file}</code> <span className="muted">{f.kind}, {(f.size / 1048576).toFixed(1)} MB{f.used_by.length ? `, used on slide ${f.used_by.join(", ")}` : ""}</span>{" "}
-                  {(SLOTS[layout] ?? []).filter(() => (f.kind === "clip") === (layout === "clip")).map(([slot, label]) => <button key={slot} className="link" onClick={() => useFile(slot, f.file)}>Use as {label}</button>)}
+                  {(SLOTS[layout] ?? []).filter(() => (f.kind === "clip") === (layout === "clip")).map(([slot, label]) => <span key={slot}><button className="link" onClick={() => useFile(slot, f.file)}>Use as {label}</button>{" "}</span>)}
                 </li>))}</ul>}
             </fieldset>
           )}
