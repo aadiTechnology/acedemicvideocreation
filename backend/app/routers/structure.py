@@ -6,7 +6,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app import models, schemas
-from app.auth import CurrentUser, current_user, writer
+from app.auth import CurrentUser, current_user, require_cap
+
+writer = require_cap("structure.manage")
 from app.db import get_db
 
 

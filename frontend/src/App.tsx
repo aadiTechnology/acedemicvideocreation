@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError, LANGUAGES, Language, LessonRow, Me, Named, versions } from "./api";
 import { COURSE_TYPES, labelsFor } from "./labels";
+import OrgAdmin from "./aadi-org/OrgAdmin";
 import VersionPanel from "./VersionPanel";
 
-type Tab = "lessons" | "structure";
+type Tab = "lessons" | "structure" | "people";
 
 const label = (code: string) => LANGUAGES.find((l) => l.code === code)?.label ?? code;
 const statusText = (s: string) => s.replace("_", " ");
@@ -179,7 +180,7 @@ function LessonsTab({ s, me }: { s: ReturnType<typeof useStructure>; me: Me }) {
 export default function App() {
   const [tab, setTab] = useState<Tab>("lessons");
   const s = useStructure();
-  const [me, setMe] = useState<Me>({ user_id: "", email: "", name: "", roles: [] });
+  const [me, setMe] = useState<Me>({ user_id: "", email: "", name: "", roles: [], caps: [] });
   useEffect(() => { versions.me().then(setMe); }, []);
   return (
     <>
@@ -188,9 +189,10 @@ export default function App() {
         <nav>
           <button className={tab === "lessons" ? "on" : ""} onClick={() => setTab("lessons")}>Lessons</button>
           <button className={tab === "structure" ? "on" : ""} onClick={() => setTab("structure")}>Structure</button>
+          {(me.caps ?? []).includes("org.users.view") && <button className={tab === "people" ? "on" : ""} onClick={() => setTab("people")}>People and roles</button>}
         </nav>
       </header>
-      <main>{tab === "lessons" ? <LessonsTab s={s} me={me} /> : <StructureTab s={s} />}</main>
+      <main>{tab === "lessons" ? <LessonsTab s={s} me={me} /> : tab === "structure" ? <StructureTab s={s} /> : <OrgAdmin base="/api" title="People and roles" />}</main>
     </>
   );
 }

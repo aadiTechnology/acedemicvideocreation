@@ -103,22 +103,43 @@ def test_data_is_scoped_to_the_token_tenant(identity):
         assert b.get("/api/classes").json() == []
 
 
-def test_second_person_is_read_only_until_admin_grants_role(identity):
+def test_a_person_needs_an_account_an_administrator_created(identity):
     with make_client(identity) as admin, make_client(identity) as other:
         sign_in(admin, identity, sub="boss", tid="t1", email="boss@x.test")
-        sign_in(other, identity, sub="staff", tid="t1", email="staff@x.test")
-        assert other.get("/api/me").json()["roles"] == []
+        # Identity let her in, but this product has no account for her: she is told so and gets no session
+        r = sign_in(other, identity, sub="staff", tid="t1", email="staff@x.test")
+        assert r.status_code == 403 and "do not have an account" in r.text
+        assert other.get("/api/me").status_code == 401
+        # the administrator adds her (by email, default role: viewer); her first sign-in links the account
+        added = admin.post("/api/org/users", json={"email": "Staff@X.test", "name": "Staff"})
+        assert added.status_code == 201 and added.json()["role"] == "viewer"
+        assert sign_in(other, identity, sub="staff", tid="t1", email="staff@x.test").status_code == 303
+        me = other.get("/api/me").json()
+        assert me["roles"] == [] and me["caps"] == []
         assert other.get("/api/classes").status_code == 200
-        r = other.post("/api/classes", json={"name": "Class 8"})
-        assert r.status_code == 403
-        assert other.get("/api/admin/users").status_code == 403
-        users = {u["user_id"]: u for u in admin.get("/api/admin/users").json()}
-        assert set(users) == {"boss", "staff"}
-        assert admin.put("/api/admin/users/staff/roles", json={"roles": ["content_operator"]}).status_code == 200
+        assert other.post("/api/classes", json={"name": "Class 8"}).status_code == 403
+        assert other.get("/api/org/users").status_code == 403
+        # the administrator gives her the content operator role
+        role = next(x for x in admin.get("/api/org/roles").json() if x["key"] == "content_operator")
+        assert admin.patch(f"/api/org/users/{added.json()['id']}", json={"role_id": role["id"]}).status_code == 200
         assert other.post("/api/classes", json={"name": "Class 8"}).status_code == 201
-        assert admin.put("/api/admin/users/staff/roles", json={"roles": ["wizard"]}).status_code == 422
-        assert admin.put("/api/admin/users/boss/roles", json={"roles": ["reviewer"]}).status_code == 409  # cannot demote self
-        assert admin.put("/api/admin/users/ghost/roles", json={"roles": ["reviewer"]}).status_code == 404
+        assert other.get("/api/me").json()["roles"] == ["content_operator"]
+        # the only administrator cannot demote or suspend themselves
+        mine = next(u for u in admin.get("/api/org/users").json() if u["email"] == "boss@x.test")
+        viewer = next(x for x in admin.get("/api/org/roles").json() if x["key"] == "viewer")
+        assert admin.patch(f"/api/org/users/{mine['id']}", json={"role_id": viewer["id"]}).status_code == 409
+        assert admin.post(f"/api/org/users/{mine['id']}/suspend").status_code == 409
+
+
+def test_a_suspended_person_cannot_sign_in_or_use_a_live_session(identity):
+    with make_client(identity) as admin, make_client(identity) as other:
+        sign_in(admin, identity, sub="boss", tid="t1", email="boss@x.test")
+        added = admin.post("/api/org/users", json={"email": "staff@x.test"}).json()
+        sign_in(other, identity, sub="staff", tid="t1", email="staff@x.test")
+        assert other.get("/api/me").status_code == 200
+        assert admin.post(f"/api/org/users/{added['id']}/suspend").status_code == 200
+        assert other.get("/api/me").status_code == 403  # a session already open is refused at once
+        assert sign_in(other, identity, sub="staff", tid="t1", email="staff@x.test").status_code == 403
 
 
 @pytest.mark.parametrize("tamper", ["state", "no_cookie"])

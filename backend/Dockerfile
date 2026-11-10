@@ -7,6 +7,7 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 COPY app ./app
+COPY aadi_org ./aadi_org
 COPY alembic ./alembic
 COPY alembic.ini .
 

@@ -15,7 +15,10 @@ from app.config import Settings, load_settings
 from app import oidc
 from app.engine_client import EngineClient
 from app.storage import make_store
-from app.routers import admin, lessons, slides, structure, versions, video
+from aadi_org.router import create_org_router
+from app.auth import principal
+from app.org import CATALOG, M
+from app.routers import lessons, slides, structure, versions, video
 
 logger = logging.getLogger("academic")
 
@@ -61,8 +64,8 @@ def create_app(settings: Settings | None = None, oidc_http=None, engine_http=Non
     @app.get("/api/me")
     def me(request: Request):
         from app.auth import current_user
-        user = current_user(request)
-        return {"user_id": user.user_id, "tenant_id": user.tenant_id, "email": user.email, "name": user.name, "roles": list(user.roles)}
+        user = current_user(request, principal(request))
+        return {"user_id": user.user_id, "tenant_id": user.tenant_id, "email": user.email, "name": user.name, "roles": list(user.roles), "caps": sorted(user.caps)}
 
     @app.get("/health")
     def health() -> dict:
@@ -82,7 +85,8 @@ def create_app(settings: Settings | None = None, oidc_http=None, engine_http=Non
             logger.warning("OIDC sign-in is not configured: set SESSION_SECRET and the IDENTITY_* variables.")
         else:
             app.include_router(oidc.create_router(settings, oidc.OIDCClient(settings, oidc_http)))
-    for router in (*structure.routers, lessons.router, admin.router, versions.router, video.router, slides.router, slides.layouts_router):
+    org_router = create_org_router(get_db=database.get_db, principal=principal, M=M, catalog=CATALOG)
+    for router in (*structure.routers, lessons.router, org_router, versions.router, video.router, slides.router, slides.layouts_router):
         app.include_router(router, prefix="/api")
     return app
 

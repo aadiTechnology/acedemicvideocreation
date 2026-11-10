@@ -12,24 +12,24 @@ from sqlalchemy.orm import Session
 from starlette.datastructures import UploadFile  # what request.form() returns (not fastapi's subclass)
 
 from app import models as m
-from app.auth import CurrentUser, current_user, require_roles
+from app.auth import CurrentUser, current_user, require_cap
 from app.db import get_db
 from app.package import CANONICAL_COLUMNS, WORDS_PER_MINUTE, ImportRejected, parse_upload
 from app.routers.structure import owned
 
 router = APIRouter(prefix="/lesson-versions")
-writer = require_roles("content_operator")
-reviewer = require_roles("reviewer")
+writer = require_cap("lessons.manage")
+reviewer = require_cap("review.decide")
 
 LANGUAGE_NAMES = {"en-IN": "English", "hi-IN": "Hindi (Devanagari script)", "mr-IN": "Marathi (Devanagari script)"}
 
 # action -> (allowed from statuses, new status, role that may do it)
 TRANSITIONS = {
-    "submit": ({"draft", "changes_required"}, "in_review", "content_operator"),
-    "approve": ({"in_review"}, "approved", "reviewer"),
-    "request_changes": ({"in_review"}, "changes_required", "reviewer"),
-    "reject": ({"in_review"}, "rejected", "reviewer"),
-    "reopen": ({"rejected", "approved"}, "draft", "content_operator"),
+    "submit": ({"draft", "changes_required"}, "in_review", "lessons.manage"),
+    "approve": ({"in_review"}, "approved", "review.decide"),
+    "request_changes": ({"in_review"}, "changes_required", "review.decide"),
+    "reject": ({"in_review"}, "rejected", "review.decide"),
+    "reopen": ({"rejected", "approved"}, "draft", "lessons.manage"),
 }
 
 
@@ -116,7 +116,7 @@ def review(version_id: str, body: ReviewIn, db: Session = Depends(get_db), user:
     if rule is None:
         raise HTTPException(422, f"Unknown action {body.action!r}. Use one of: {', '.join(TRANSITIONS)}.")
     allowed_from, to, role = rule
-    if not user.has(role):
+    if not user.can(role):
         raise HTTPException(403, "Your role does not allow this action.")
     if v.review_status not in allowed_from:
         raise HTTPException(409, f"A version that is {v.review_status.replace('_', ' ')} cannot be moved this way.")

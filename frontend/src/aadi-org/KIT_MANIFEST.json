@@ -1,0 +1,8 @@
+{
+ "kit": "aadi-org-kit",
+ "version": "0.1.1",
+ "files": {
+  "OrgAdmin.tsx": "30ca9053caef781c177278e619ad61a5129454708890d627bb5de3dc5bc5bbac",
+  "orgApi.ts": "cc9d4a261806a7af8294092343638604c889e0846f0a3d5356094345897bd777"
+ }
+}

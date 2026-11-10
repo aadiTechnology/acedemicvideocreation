@@ -18,7 +18,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app import models as m
-from app.auth import CurrentUser, current_user, require_roles
+from app.auth import CurrentUser, current_user, require_cap
 from app.db import get_db
 from app.engine_client import EngineRejected, EngineUnavailable
 from app.package import CANONICAL_COLUMNS, ImportRejected, _diagram_problem, parse_upload
@@ -28,7 +28,7 @@ from app.routers.video import client_of
 
 router = APIRouter(prefix="/lesson-versions")
 layouts_router = APIRouter(prefix="/layouts")
-writer = require_roles("content_operator")
+writer = require_cap("lessons.manage")
 
 
 class SlideIn(BaseModel):

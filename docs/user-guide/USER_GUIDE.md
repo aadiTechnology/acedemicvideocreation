@@ -240,3 +240,15 @@ When an animated video is ready, a **Quality check** appears under it: a result 
 - **Errors** in captions or narration (for example captions that overlap, or missing audio) stop the video from being made, and the message names the slide.
 - **Warnings** do not stop anything: text close to the frame edge, a label the narrator never says, labels in a different order from the narration, a length far from the lesson's target, an objective that may not be covered.
 - The score is a rule-based estimate, not a judgement of the lesson. The panel lists what a person still has to check: correctness of the content, Hindi and Marathi wording and voice, and any built-in pictures.
+
+## 14. People, departments and roles
+
+The **People and roles** tab (for people with permission to see it) manages who can do what in this product. It comes from the shared organisation kit (`aadi-org-kit`), so it works the same way in every Aadi product; each product has its own people, departments and roles.
+
+- **Accounts.** Identity decides whether a person may enter the product (their company has it and they are an active member). The product then needs an account for them. The first person of a company to sign in becomes its administrator; everyone else must be added under **People** (email, name, title, department, role). They show as *invited* and are linked when they first sign in. Someone who signs in without an account sees "No account in this product yet".
+- **Departments** can be nested; a department with people or sub-departments cannot be deleted.
+- **Roles and features** is a table of what each role may do. Built-in roles: Administrator, Content operator, Reviewer, Production operator and Viewer (read only). Administrators can add roles and tick features; every company has its own roles. A person has one role.
+- **Protection.** The last active administrator cannot be suspended or demoted. Suspending a person refuses them at once, even with a session open. A person in one company never sees another company's people.
+- **Activity** lists every change with who made it.
+- People who had roles before this change were moved across with the equal role (several roles became a combined role), so nobody lost or gained access.
+- The older `/api/admin/users` endpoints are replaced by `/api/org/...`.

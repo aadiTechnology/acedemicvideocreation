@@ -9,6 +9,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import html
 import secrets
 import time
 from urllib.parse import urlencode
@@ -16,14 +17,14 @@ from urllib.parse import urlencode
 import httpx
 import jwt
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse, HTMLResponse
 from itsdangerous import BadSignature, URLSafeTimedSerializer
 from jwt.algorithms import RSAAlgorithm
 from sqlalchemy import select
 
 from app import db as database
 from app.config import Settings
-from app.models import AppUser, UserRole, utcnow
+from app.models import AppUser, utcnow
 
 SESSION_COOKIE = "academic_session"
 TX_COOKIE = "academic_oidc"
@@ -99,6 +100,11 @@ def _serializer(settings: Settings, salt: str) -> URLSafeTimedSerializer:
     return URLSafeTimedSerializer(settings.session_secret, salt=salt)
 
 
+NO_ACCOUNT_PAGE = """<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>No account yet</title><style>body{{font-family:system-ui,sans-serif;max-width:520px;margin:15vh auto;padding:0 20px;color:#1c2540}}a{{color:#2457d6}}</style></head>
+<body><h2>No account in this product yet</h2><p>{message}</p><p><a href="{hub}">Back to your Aadi products</a></p></body></html>"""
+
+
 def read_session(request: Request) -> dict | None:
     raw = request.cookies.get(SESSION_COOKIE)
     if not raw:
@@ -113,20 +119,25 @@ def _set_cookie(resp, name: str, value: str, settings: Settings, max_age: int) -
     resp.set_cookie(name, value, max_age=max_age, httponly=True, secure=settings.app_base_url.startswith("https"), samesite="lax", path="/")
 
 
-def record_login(claims: dict) -> list[str]:
-    """Remember the person and return their roles. The first person of a company becomes its admin."""
+def record_login(claims: dict) -> str | None:
+    """Remember the person and find their account. Returns None when they have one, else the reason they cannot enter.
+    The first person of a company becomes its administrator; everyone else needs an account an administrator created."""
+    from aadi_org.service import OrgError, OrgService
+    from app.org import CATALOG, M
     tid, sub = claims["tid"], claims["sub"]
     with database.session() as db:
         user = db.scalar(select(AppUser).where(AppUser.tenant_id == tid, AppUser.user_id == sub))
         if user is None:
             db.add(AppUser(tenant_id=tid, user_id=sub, email=claims.get("email", ""), name=claims.get("name", "")))
-            any_roles = db.scalar(select(UserRole.id).where(UserRole.tenant_id == tid).limit(1))
-            if any_roles is None:
-                db.add(UserRole(tenant_id=tid, user_id=sub, role="admin"))
         else:
             user.email, user.name, user.last_login_at = claims.get("email", user.email), claims.get("name", user.name), utcnow()
+        try:
+            member = OrgService(db, M, CATALOG).resolve(tid, sub, claims.get("email", ""), claims.get("name", ""), identity_id=sub)
+        except OrgError as e:
+            db.commit()
+            return e.message
         db.commit()
-        return list(db.scalars(select(UserRole.role).where(UserRole.tenant_id == tid, UserRole.user_id == sub)))
+        return None if member is not None else "You do not have an account in Academic Video Creation yet. Ask your administrator to add you, then sign in again."
 
 
 def create_router(settings: Settings, oidc: OIDCClient) -> APIRouter:
@@ -151,7 +162,9 @@ def create_router(settings: Settings, oidc: OIDCClient) -> APIRouter:
             raise HTTPException(400, "The sign-in response does not match the request.")
         tokens = oidc.exchange(code, tx["v"])
         claims = oidc.verify_id_token(tokens.get("id_token", ""), tx["n"])
-        roles = record_login(claims)
+        refusal = record_login(claims)
+        if refusal:
+            return HTMLResponse(NO_ACCOUNT_PAGE.format(message=html.escape(refusal), hub=html.escape(settings.identity_issuer_url + "/")), 403)
         session = {"sub": claims["sub"], "tid": claims["tid"], "email": claims.get("email", ""), "name": claims.get("name", ""),
                    "slug": claims.get("tenant_slug", "")}
         resp = RedirectResponse("/", 303)

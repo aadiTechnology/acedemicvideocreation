@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 from starlette.datastructures import UploadFile
 
 from app import models as m
-from app.auth import CurrentUser, current_user, require_roles
+from app.auth import CurrentUser, current_user, require_cap
 from app.db import get_db
 from app.storage import PREFIX, StorageError, is_remote, key_of
 from app.engine_client import APPLICATION_ID, CONTRACT_VERSION, EngineClient, EngineRejected, EngineUnavailable
@@ -24,7 +24,7 @@ from app.routers.structure import owned
 
 logger = logging.getLogger("academic.video")
 router = APIRouter()
-operator = require_roles("production_operator")
+operator = require_cap("video.generate")
 
 PROFILES = ("1080p24", "720p24", "480p24")
 SPEEDS = {"slow": "-15%", "normal": "0%", "fast": "+15%"}  # narration speed presets -> Azure prosody rate

@@ -54,12 +54,12 @@ export interface Detail {
   events: { action: string; from: string; to: string; note: string; actor_id: string; at: string }[];
 }
 export interface ImportSummary { slides: number; word_count: number; estimated_minutes: number; dry_run: boolean; warnings: Issue[] }
-export interface Me { user_id: string; email: string; name: string; roles: string[] }
+export interface Me { user_id: string; email: string; name: string; roles: string[]; caps?: string[] }
 
 export const versions = {
   get: (id: string) => call<Detail>("GET", `/lesson-versions/${id}`),
   review: (id: string, action: string, note: string) => call<Detail>("POST", `/lesson-versions/${id}/review`, { action, note }),
-  me: () => call<Me>("GET", "/me").catch(() => ({ user_id: "", email: "", name: "", roles: [] as string[] })),
+  me: () => call<Me>("GET", "/me").catch(() => ({ user_id: "", email: "", name: "", roles: [] as string[], caps: [] as string[] })),
   async promptSpec(id: string): Promise<string> {
     const res = await fetch(`/api/lesson-versions/${id}/prompt-spec`, { credentials: "same-origin" });
     if (!res.ok) throw new ApiError("Could not load the prompt.");
