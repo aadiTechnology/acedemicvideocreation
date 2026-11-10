@@ -51,7 +51,7 @@ def test_academic_conforms_to_the_kit(adapter, name, fn):
 
 def test_the_pinned_kit_copy_is_exactly_the_recorded_version():
     kit = Path(__file__).resolve().parents[1] / "aadi_org"
-    assert vendoring.verify(kit, "0.1.1") == []
+    assert vendoring.verify(kit, "0.2.0") == []
 
 
 def test_academic_roles_and_capabilities(adapter):

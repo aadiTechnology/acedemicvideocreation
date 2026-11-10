@@ -4,6 +4,8 @@ export interface OrgMember {
   role_id: string | number; role: string | null; role_name: string | null; department_id: string | number | null; department: string | null;
   manager_id: string | number | null; manager: string | null;
 }
+export interface OrgIntegration { ok: boolean; message?: string }
+export type OrgAdded = OrgMember & { integration?: OrgIntegration }
 export interface OrgDepartment { id: string | number; name: string; parent_id: string | number | null; head_member_id: string | number | null; members: number }
 export interface OrgRole { id: string | number; key: string; name: string; description: string; caps: string[]; is_system: boolean; members: number }
 export interface OrgCapability { key: string; label: string; scopes: string[]; feature: string }
@@ -30,10 +32,10 @@ export function orgApi(base = "/api") {
   return {
     me: () => call<OrgMe>("GET", "/me"),
     users: () => call<OrgMember[]>("GET", "/users"),
-    addUser: (b: { email: string; name?: string; title?: string; role_id?: string | number | null; department_id?: string | number | null }) => call<OrgMember>("POST", "/users", b),
+    addUser: (b: { email: string; name?: string; title?: string; role_id?: string | number | null; department_id?: string | number | null }) => call<OrgAdded>("POST", "/users", b),
     patchUser: (id: string | number, b: Record<string, unknown>) => call<OrgMember>("PATCH", `/users/${id}`, b),
-    suspend: (id: string | number) => call<OrgMember>("POST", `/users/${id}/suspend`),
-    reactivate: (id: string | number) => call<OrgMember>("POST", `/users/${id}/reactivate`),
+    suspend: (id: string | number) => call<OrgAdded>("POST", `/users/${id}/suspend`),
+    reactivate: (id: string | number) => call<OrgAdded>("POST", `/users/${id}/reactivate`),
     departments: () => call<OrgDepartment[]>("GET", "/departments"),
     addDepartment: (b: { name: string; parent_id?: string | number | null }) => call<OrgDepartment>("POST", "/departments", b),
     patchDepartment: (id: string | number, b: Record<string, unknown>) => call<OrgDepartment>("PATCH", `/departments/${id}`, b),

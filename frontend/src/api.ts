@@ -54,7 +54,7 @@ export interface Detail {
   events: { action: string; from: string; to: string; note: string; actor_id: string; at: string }[];
 }
 export interface ImportSummary { slides: number; word_count: number; estimated_minutes: number; dry_run: boolean; warnings: Issue[] }
-export interface Me { user_id: string; email: string; name: string; roles: string[]; caps?: string[] }
+export interface Me { user_id: string; email: string; name: string; roles: string[]; caps?: string[]; hub_url?: string }
 
 export const versions = {
   get: (id: string) => call<Detail>("GET", `/lesson-versions/${id}`),

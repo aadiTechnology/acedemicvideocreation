@@ -1,6 +1,6 @@
 {
  "kit": "aadi-org-kit",
- "version": "0.1.1",
+ "version": "0.2.0",
  "files": {
   "__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
   "caps.py": "a0b1d8ff6542e45af14466f8f86ab06ffb9649eec9100224817bd9b1ab0dfede",
@@ -8,7 +8,7 @@
   "conformance.py": "5c453ed3baab9bec05df88479cdf7060c079b4f3a3621b39c5576164caf1cc24",
   "migration.py": "16fcc802f596552f337a63c7a4b1e0edce990941099ea3b5eb5ebbf7f66375e3",
   "models.py": "f5a6642e7a8f3e2cdf5b9c1feebfeb85f5a90f7ad4d8265c9ad167740a9ee8c7",
-  "router.py": "6f9fd1c136dfcc9856b1746fc1c57ca9c97a0ea7e7cc7c6e11345b0971893b10",
+  "router.py": "03fbad2f15ee0f753329dddd603cffff12046343121e0acd5395f67f2f832e7a",
   "service.py": "047ed295b822560862e8ccff6db2666d89afe32fccb86e83084a4d2323a96d6d",
   "vendoring.py": "d6da252581ff469fe9285e3205cb93145a51d447722a723c79e602871cbc21c4"
  }

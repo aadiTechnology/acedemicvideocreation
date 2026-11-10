@@ -47,8 +47,8 @@ class Ctx:
 class OrgHooks:
     """Override in a product. Called after the change is saved; an exception never undoes it."""
 
-    def member_created(self, member: dict, principal: Principal) -> None: ...
-    def member_status_changed(self, member: dict, principal: Principal) -> None: ...
+    def member_created(self, member: dict, principal: Principal) -> dict | None: ...  # a returned dict is sent back as "integration"
+    def member_status_changed(self, member: dict, principal: Principal) -> dict | None: ...
 
 
 class UserIn(BaseModel):
@@ -141,8 +141,8 @@ def create_org_router(*, get_db: Callable, principal: Callable, M, catalog: Prod
             c.need("org.users.manage")
             out = c.svc.create_member(c.principal.tenant_id, c.actor, b.email, b.name, b.role_id, b.title, b.department_id, b.manager_id)
             c.db.commit()
-        _call(hooks.member_created, out, c.principal)
-        return out
+        note = _call(hooks.member_created, out, c.principal)
+        return {**out, "integration": note} if isinstance(note, dict) else out
 
     @router.patch("/users/{member_id}")
     def patch_user(member_id: str, b: UserPatch, c: Ctx = Depends(ctx)):
@@ -157,8 +157,8 @@ def create_org_router(*, get_db: Callable, principal: Callable, M, catalog: Prod
             c.need("org.users.manage")
             out = c.svc.set_status(c.principal.tenant_id, c.actor, member_id, status)
             c.db.commit()
-        _call(hooks.member_status_changed, out, c.principal)
-        return out
+        note = _call(hooks.member_status_changed, out, c.principal)
+        return {**out, "integration": note} if isinstance(note, dict) else out
 
     @router.post("/users/{member_id}/suspend")
     def suspend(member_id: str, c: Ctx = Depends(ctx)):
@@ -243,9 +243,11 @@ def create_org_router(*, get_db: Callable, principal: Callable, M, catalog: Prod
     return router
 
 
-def _call(fn: Callable, *args) -> None:
+def _call(fn: Callable, *args):
+    """Run a hook after the change is saved. A dict it returns is passed to the caller as "integration" (e.g. an enrolment outcome)."""
     try:
-        fn(*args)
+        return fn(*args)
     except Exception:  # noqa: BLE001 - a hook must never undo or fail a saved change
         import logging
         logging.getLogger("aadi_org").exception("organization hook failed")
+        return {"ok": False, "message": "The follow-up step failed; the change itself was saved."}

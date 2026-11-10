@@ -61,8 +61,9 @@ function People({ api, can }: { api: Api; can: Can }) {
           <label>Role<select value={f.role_id} onChange={(e) => setF({ ...f, role_id: e.target.value })}><option value="">Default</option>{(roles.data ?? []).map((r) => <option key={r.id} value={String(r.id)}>{r.name}</option>)}</select></label>
           <label>Department<select value={f.department_id} onChange={(e) => setF({ ...f, department_id: e.target.value })}><option value="">None</option>{(depts.data ?? []).map((d) => <option key={d.id} value={String(d.id)}>{d.name}</option>)}</select></label>
           <button className="primary" disabled={!f.email.includes("@")} onClick={() => run(async () => {
-            await api.addUser({ email: f.email, name: f.name, title: f.title, role_id: f.role_id || null, department_id: f.department_id || null });
-            setF({ email: "", name: "", title: "", role_id: "", department_id: "" }); setMsg("Added. They can sign in once their company has given them access to this product.");
+            const added = await api.addUser({ email: f.email, name: f.name, title: f.title, role_id: f.role_id || null, department_id: f.department_id || null });
+            setF({ email: "", name: "", title: "", role_id: "", department_id: "" });
+            setMsg(added.integration ? (added.integration.ok ? `Added. ${added.integration.message ?? ""}` : `Added here, but not yet able to sign in: ${added.integration.message ?? "the sign-in service did not accept them."}`) : "Added. They can sign in once their company has given them access to this product.");
           })}>Add person</button>
         </div>
       )}

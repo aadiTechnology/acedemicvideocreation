@@ -191,6 +191,7 @@ export default function App() {
           <button className={tab === "structure" ? "on" : ""} onClick={() => setTab("structure")}>Structure</button>
           {(me.caps ?? []).includes("org.users.view") && <button className={tab === "people" ? "on" : ""} onClick={() => setTab("people")}>People and roles</button>}
         </nav>
+        {me.hub_url && <a className="switch" href={me.hub_url} style={{ marginLeft: "auto", fontSize: 14 }}>Switch product</a>}
       </header>
       <main>{tab === "lessons" ? <LessonsTab s={s} me={me} /> : tab === "structure" ? <StructureTab s={s} /> : <OrgAdmin base="/api" title="People and roles" />}</main>
     </>
