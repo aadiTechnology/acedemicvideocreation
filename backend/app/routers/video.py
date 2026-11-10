@@ -92,13 +92,14 @@ def _summary(db: Session, version: m.LessonVersion) -> dict:
             "can_generate": reason is None, "blocked_reason": reason}
 
 
-def _manifest(version: m.LessonVersion, user: CurrentUser, key: str, s: dict) -> dict:
+def _manifest(version: m.LessonVersion, user: CurrentUser, key: str, s: dict, target_minutes: float | None = None) -> dict:
     return {
         "contract_version": CONTRACT_VERSION,
         "caller": {"application_id": APPLICATION_ID, "tenant_ref": user.tenant_id, "external_ref": version.id},
         "idempotency_key": key, "language": version.language,
         "tts": {"provider": s["provider"], "mode": s["mode"], "rate": SPEEDS.get(s.get("speed", "normal"), "0%"), **({"voice": s["voice"]} if s.get("voice") else {})},
         "render": {"profile": s["profile"], "style": s.get("style", "plain"), "subtitles": {"enabled": s["subtitles"]}},
+        **({"quality": {"target_minutes": float(target_minutes)}} if target_minutes else {}),  # the quality check compares the video with the planned length
     }
 
 
@@ -112,7 +113,8 @@ def _send(db: Session, request: Request, job: m.VideoJob, version: m.LessonVersi
     """Submit to the engine. The engine de-duplicates on the idempotency key, so repeating this is safe."""
     try:
         package = Path(version.package_path).read_bytes()
-        resp = client_of(request).submit(_manifest(version, user, job.idempotency_key, job.settings), package, job.idempotency_key, cid_of(request))
+        target = (db.get(m.Lesson, version.lesson_id).expected_duration_minutes if version.lesson_id else None)
+        resp = client_of(request).submit(_manifest(version, user, job.idempotency_key, job.settings, target), package, job.idempotency_key, cid_of(request))
         job.engine_job_id, job.state = resp["job_id"], resp["state"]
         job.error_code = job.error_message = None
         job.retryable, job.finished_at = False, None
@@ -349,6 +351,28 @@ def _serve(request: Request, asset: m.VideoAsset, filename: str, download: bool)
         url = request.app.state.store.url(key_of(asset.local_path), filename, asset.content_type, download)
         return RedirectResponse(url, status_code=302, headers={"Cache-Control": "no-store"})
     return FileResponse(asset.local_path, media_type=asset.content_type, filename=filename)
+
+
+@router.get("/video-jobs/{job_id}/quality")
+def quality_report(job_id: str, request: Request, db: Session = Depends(get_db), user: CurrentUser = Depends(current_user)):
+    """The automated quality check of a finished video (checks, scores, what needs a person)."""
+    job = _get_job(db, job_id, user)
+    asset = db.scalar(select(m.VideoAsset).where(m.VideoAsset.job_id == job.id, m.VideoAsset.kind == "quality_report"))
+    if asset is None:
+        raise HTTPException(404, "There is no quality report for this video.")
+    try:
+        if is_remote(asset.local_path):
+            store = request.app.state.store
+            raw = store.read_bytes(key_of(asset.local_path)) if store is not None else None
+        else:
+            raw = Path(asset.local_path).read_bytes() if Path(asset.local_path).is_file() else None
+        return json.loads(raw) if raw else _no_report()
+    except (ValueError, OSError, StorageError):
+        return _no_report()
+
+
+def _no_report():
+    raise HTTPException(404, "The quality report is not available.")
 
 
 @router.get("/video-jobs/{job_id}/download")

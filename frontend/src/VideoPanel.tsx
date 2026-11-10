@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { ApiError, Issue, Me, video, VideoCaps, VideoSummary } from "./api";
+import QualityPanel from "./QualityPanel";
 
 const ACTIVE = ["submitting", "queued", "validating", "awaiting_audio", "generating_audio", "rendering", "finalizing"];
 const STATE_TEXT: Record<string, string> = {
@@ -118,6 +119,7 @@ export default function VideoPanel({ versionId, approved, me }: { versionId: str
               <li key={a.id}><a href={`/api/video-jobs/${job.id}/assets/${a.id}`}>{a.filename}</a>{" "}
                 <span className="muted">{a.kind === "video" ? `${a.width}x${a.height}, ${a.fps} fps, ${Math.round(a.duration_seconds ?? 0)} s, ` : ""}{mb(a.size_bytes)}</span></li>))}
             </ul>
+            {(s?.assets ?? []).some((a) => a.kind === "quality_report") && <QualityPanel jobId={job.id} />}
           </>}
         </div>
       )}

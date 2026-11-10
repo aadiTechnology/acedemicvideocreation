@@ -30,6 +30,7 @@ class FakeEngine:
         self.jobs: dict[str, dict] = {}
         self.by_key: dict[str, str] = {}
         self.submits = 0
+        self.report: dict | None = None  # when set, finished jobs also list a quality_report asset with this content
         self.previews: list[dict] = []
         self.recommends: list[dict] = []
         self.down = False
@@ -41,6 +42,9 @@ class FakeEngine:
     # ---- test controls ----
     def set(self, job_id: str, state: str, percent: int = 0, **kw) -> None:
         self.jobs[job_id].update(state=state, percent=percent, **kw)
+
+    def _report_bytes(self) -> bytes:
+        return json.dumps(self.report).encode()
 
     def only_job(self) -> str:
         assert len(self.jobs) == 1, self.jobs.keys()
@@ -128,9 +132,11 @@ class FakeEngine:
                 {"asset_id": "a-video", "kind": "video", "filename": "final_video.mp4", "content_type": "video/mp4", "size_bytes": len(self.VIDEO),
                  "sha256": hashlib.sha256(self.VIDEO).hexdigest(), "duration_seconds": 12.5, "width": 1920, "height": 1080, "fps": 24},
                 {"asset_id": "a-cfg", "kind": "render_config", "filename": "render_config.json", "content_type": "application/json",
-                 "size_bytes": 2, "sha256": hashlib.sha256(b"{}").hexdigest()}]})
+                 "size_bytes": 2, "sha256": hashlib.sha256(b"{}").hexdigest()},
+                *([{"asset_id": "a-qr", "kind": "quality_report", "filename": "quality_report.json", "content_type": "application/json",
+                    "size_bytes": len(self._report_bytes()), "sha256": hashlib.sha256(self._report_bytes()).hexdigest()}] if self.report else [])]})
         if rest[0] == "assets" and rest[-1] == "content":
-            body = self.VIDEO if rest[1] == "a-video" else b"{}"
+            body = self.VIDEO if rest[1] == "a-video" else self._report_bytes() if rest[1] == "a-qr" else b"{}"
             if self.corrupt_download and rest[1] == "a-video":
                 body = body[:-1] + b"X"
             return httpx.Response(200, content=body)

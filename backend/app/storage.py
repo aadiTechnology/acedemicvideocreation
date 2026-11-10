@@ -45,6 +45,16 @@ class B2Store:
             "get_object", ExpiresIn=self.expiry,
             Params={"Bucket": self.bucket, "Key": key, "ResponseContentType": content_type, "ResponseContentDisposition": disposition})
 
+    def read_bytes(self, key: str, limit: int = 2 * 1024 * 1024) -> bytes:
+        """Read a small object (a report). Larger objects are refused: videos are served through signed links."""
+        try:
+            body = self.client.get_object(Bucket=self.bucket, Key=key)["Body"].read(limit + 1)
+        except Exception as exc:  # noqa: BLE001
+            raise StorageError("The file could not be read.") from exc
+        if len(body) > limit:
+            raise StorageError("The file is too large to read here.")
+        return body
+
     def exists(self, key: str) -> bool:
         try:
             self.client.head_object(Bucket=self.bucket, Key=key)

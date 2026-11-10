@@ -30,6 +30,11 @@ class FakeStore:
     def exists(self, key):
         return key in self.objects
 
+    def read_bytes(self, key, limit=0):
+        if key not in self.objects:
+            raise StorageError("missing")
+        return self.objects[key]
+
     def delete(self, key):
         self.objects.pop(key, None)
 
@@ -210,3 +215,7 @@ def test_move_on_start_is_off_without_the_flag(engine, store):
     with TestClient(create_app(settings, engine_http=engine.http, object_store=store)):
         time.sleep(0.5)
         assert store.objects == {}
+
+
+REPORT = {"report_version": "1", "stage": "final", "result": "review", "estimate": {"score": 92}, "summary": {"errors": 0, "warnings": 1, "passed": 9, "slides": 3},
+          "checks": [{"id": "sync.order", "category": "sync", "severity": "warning", "slide": 2, "message": "Order differs."}], "needs_human": ["Scientific correctness"]}

@@ -232,3 +232,11 @@ The slide editor can also change a slide's **module, narration, caption text and
 - Up to 18 lines of up to 80 characters and 12 steps; languages: python, javascript, java, c, cpp, sql, bash, html, json.
 - **The code is not run.** The output and variable values are what the author writes, so check them in **Edit slide > Preview** before approving.
 - A complete sample lesson is in `docs/user-guide/sample/python/` (lesson.csv and lesson_plan.json, 5 slides).
+
+## 13. Quality check
+
+When an animated video is ready, a **Quality check** appears under it: a result (passed, passed with points to review, problems found), a score out of 100, a score for each area, and the problems found with the slide number and what to fix. It is checked automatically before the video is made and again on the finished video.
+
+- **Errors** in captions or narration (for example captions that overlap, or missing audio) stop the video from being made, and the message names the slide.
+- **Warnings** do not stop anything: text close to the frame edge, a label the narrator never says, labels in a different order from the narration, a length far from the lesson's target, an objective that may not be covered.
+- The score is a rule-based estimate, not a judgement of the lesson. The panel lists what a person still has to check: correctness of the content, Hindi and Marathi wording and voice, and any built-in pictures.
