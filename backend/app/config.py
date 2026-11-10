@@ -28,6 +28,13 @@ class Settings:
     video_engine_api_key: str
     video_engine_timeout: float
     storage_dir: str = ""
+    storage_provider: str = "local"   # "local" (a volume) or "b2" (Backblaze B2, S3-compatible)
+    b2_endpoint: str = ""
+    b2_key_id: str = ""
+    b2_application_key: str = ""
+    b2_bucket: str = ""
+    b2_region: str = ""
+    b2_url_expiry: int = 900          # seconds a playback or download link stays valid
 
     @property
     def is_production(self) -> bool:
@@ -50,7 +57,18 @@ def load_settings(env=None) -> Settings:
         video_engine_api_key=e.get("VIDEO_ENGINE_API_KEY", ""),
         video_engine_timeout=float(e.get("VIDEO_ENGINE_TIMEOUT_SECONDS", "30")),
         storage_dir=e.get("STORAGE_LOCAL_DIR", "./storage"),
+        storage_provider=e.get("STORAGE_PROVIDER", "local").strip().lower(),
+        b2_endpoint=e.get("B2_ENDPOINT", "").strip(),
+        b2_key_id=e.get("B2_KEY_ID", "").strip(),
+        b2_application_key=e.get("B2_APPLICATION_KEY", "").strip(),
+        b2_bucket=e.get("B2_BUCKET", "").strip(),
+        b2_region=e.get("B2_REGION", "").strip(),
+        b2_url_expiry=int(e.get("B2_URL_EXPIRY_SECONDS", "900")),
     )
+    if s.storage_provider not in ("local", "b2"):
+        raise RuntimeError("STORAGE_PROVIDER must be local or b2.")
+    if s.storage_provider == "b2" and not (s.b2_endpoint and s.b2_key_id and s.b2_application_key and s.b2_bucket):
+        raise RuntimeError("STORAGE_PROVIDER=b2 needs B2_ENDPOINT, B2_KEY_ID, B2_APPLICATION_KEY and B2_BUCKET.")
     if s.is_production and s.auth_mode == "dev":
         raise RuntimeError("AUTH_MODE=dev is not allowed when APP_ENV=production.")
     return s

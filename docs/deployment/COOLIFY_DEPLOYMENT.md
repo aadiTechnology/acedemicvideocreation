@@ -56,3 +56,18 @@ The API is not published under `academicsapi.aaditechnology.com`: the browser on
 
 - No refresh of the Identity token and no revocation check (see above).
 - The Colab voice needs a manual notebook run per language version; Hindi and Marathi voice quality has not been validated (see the POC report).
+
+## Video storage on Backblaze B2
+
+By default (`STORAGE_PROVIDER=local`) videos stay on the `academic_storage` volume. With `STORAGE_PROVIDER=b2` the app uploads each verified video (and its supporting files) to a private bucket, deletes its local copy, and serves playback and downloads through signed links that expire (`B2_URL_EXPIRY_SECONDS`, 900 by default). Video bytes never pass through the server. Imported packages stay on the local volume (small, read often).
+
+**Set up (once)**
+1. In Backblaze, create a **private** bucket (for example `aadi-academic-videos`).
+2. Create an application key limited to that bucket, with read and write access (no key with delete rights is needed).
+3. In Coolify, on `aadi-academic-video-creation`, set: `STORAGE_PROVIDER=b2`, `B2_ENDPOINT` (for example `s3.us-west-004.backblazeb2.com`), `B2_REGION` (for example `us-west-004`), `B2_KEY_ID`, `B2_APPLICATION_KEY`, `B2_BUCKET`. Redeploy. If a B2 variable is missing the app refuses to start and says which.
+4. Move the existing videos (optional, repeatable): in the Academic container terminal run `python -m app.tools.move_to_b2 --dry-run`, then `python -m app.tools.move_to_b2`. A local file is deleted only after the upload succeeded and the object exists.
+
+**Behaviour**
+- If the upload fails, the video job fails with a clear message ("The file storage is not reachable right now") and **Try again** collects the finished video again without rendering it again.
+- The browser plays the video from a signed link, so a link older than its expiry stops working; the page asks for a new one each time it loads.
+- Do not make the bucket public. Optional: add a bucket lifecycle rule to keep only the last version of each file.

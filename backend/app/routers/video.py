@@ -8,9 +8,9 @@ import logging
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from pydantic import BaseModel
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from starlette.datastructures import UploadFile
@@ -18,6 +18,7 @@ from starlette.datastructures import UploadFile
 from app import models as m
 from app.auth import CurrentUser, current_user, require_roles
 from app.db import get_db
+from app.storage import PREFIX, StorageError, is_remote, key_of
 from app.engine_client import APPLICATION_ID, CONTRACT_VERSION, EngineClient, EngineRejected, EngineUnavailable
 from app.routers.structure import owned
 
@@ -33,6 +34,7 @@ FRIENDLY = {
     "invalid_package": "The video service did not accept the lesson package.",
     "unsupported_environment": "The video service cannot render this language yet.",
     "tts_unavailable": "The voice service is not available. Try again, or choose another voice option.",
+    "storage_unavailable": "The file storage is not reachable right now. Try again in a minute.",
     "render_failed": "The video could not be rendered. Try again.",
     "worker_interrupted": "The video service restarted while rendering. Try again.",
     "asset_corrupt": "The finished video did not pass the integrity check. Try again.",
@@ -132,6 +134,7 @@ def _collect_assets(db: Session, request: Request, job: m.VideoJob) -> None:
     if not any(a["kind"] == "video" for a in listed):
         _fail(job, "render_failed", "The video service finished without a video file.", retryable=False)
         return
+    db.execute(delete(m.VideoAsset).where(m.VideoAsset.job_id == job.id))  # a retry collects from scratch
     for a in listed:
         target = folder / f"{a['kind']}-{a['filename']}"
         client.download_asset(job.engine_job_id, a["asset_id"], target, cid_of(request))
@@ -140,10 +143,21 @@ def _collect_assets(db: Session, request: Request, job: m.VideoJob) -> None:
             target.unlink(missing_ok=True)
             _fail(job, "asset_corrupt", retryable=True)
             return
+        stored = str(target)
+        store = request.app.state.store
+        if store is not None:  # the verified file moves to object storage; only the key is kept here
+            key = f"videos/{job.version_id}/{job.id}/{a['kind']}-{a['filename']}"
+            try:
+                store.put_file(key, target, a["content_type"])
+            except StorageError:
+                _fail(job, "storage_unavailable", retryable=True)
+                return
+            target.unlink(missing_ok=True)
+            stored = PREFIX + key
         meta = {k: a[k] for k in ("duration_seconds", "width", "height", "fps") if a.get(k) is not None}
         db.add(m.VideoAsset(tenant_id=job.tenant_id, job_id=job.id, version_id=job.version_id, engine_asset_id=a["asset_id"], kind=a["kind"],
                             filename=a["filename"], content_type=a["content_type"], size_bytes=a["size_bytes"], sha256=digest,
-                            local_path=str(target), meta=meta))
+                            local_path=stored, meta=meta))
     job.state, job.percent, job.stage = "succeeded", 100, "done"
     job.error_code = job.error_message = None
     job.finished_at = m.utcnow()
@@ -246,7 +260,7 @@ def retry(job_id: str, request: Request, db: Session = Depends(get_db), user: Cu
     version = db.get(m.LessonVersion, job.version_id)
     if job.state != "failed" or not job.retryable:
         raise HTTPException(409, "This video cannot be retried. Start a new one instead.")
-    if job.error_code == "asset_corrupt":
+    if job.error_code in ("asset_corrupt", "storage_unavailable"):  # the video exists; only collecting it failed
         job.state, job.error_code, job.error_message, job.finished_at = "finalizing", None, None, None
         db.commit()
         _refresh(db, request, job)
@@ -322,19 +336,34 @@ async def upload_audio(job_id: str, request: Request, db: Session = Depends(get_
     return _summary(db, db.get(m.LessonVersion, job.version_id))
 
 
+def _available(request: Request, asset: m.VideoAsset) -> bool:
+    if is_remote(asset.local_path):
+        store = request.app.state.store
+        return store is not None and store.exists(key_of(asset.local_path))
+    return Path(asset.local_path).is_file()
+
+
+def _serve(request: Request, asset: m.VideoAsset, filename: str, download: bool):
+    """A local file is streamed; a stored one is a redirect to a short-lived signed link, so the video never passes through here."""
+    if is_remote(asset.local_path):
+        url = request.app.state.store.url(key_of(asset.local_path), filename, asset.content_type, download)
+        return RedirectResponse(url, status_code=302, headers={"Cache-Control": "no-store"})
+    return FileResponse(asset.local_path, media_type=asset.content_type, filename=filename)
+
+
 @router.get("/video-jobs/{job_id}/download")
 def download(job_id: str, request: Request, db: Session = Depends(get_db), user: CurrentUser = Depends(current_user)):
     job = _get_job(db, job_id, user)
     asset = db.scalar(select(m.VideoAsset).where(m.VideoAsset.job_id == job.id, m.VideoAsset.kind == "video"))
-    if job.state != "succeeded" or asset is None or not Path(asset.local_path).is_file():
+    if job.state != "succeeded" or asset is None or not _available(request, asset):
         raise HTTPException(404, "The video is not available.")
-    return FileResponse(asset.local_path, media_type=asset.content_type, filename=f"{asset.version_id}.mp4")
+    return _serve(request, asset, f"{asset.version_id}.mp4", download=False)
 
 
 @router.get("/video-jobs/{job_id}/assets/{asset_id}")
-def download_asset(job_id: str, asset_id: str, db: Session = Depends(get_db), user: CurrentUser = Depends(current_user)):
+def download_asset(job_id: str, asset_id: str, request: Request, db: Session = Depends(get_db), user: CurrentUser = Depends(current_user)):
     job = _get_job(db, job_id, user)
     asset = owned(db, m.VideoAsset, asset_id, user)
-    if asset.job_id != job.id or not Path(asset.local_path).is_file():
+    if asset.job_id != job.id or not _available(request, asset):
         raise HTTPException(404, "The file is not available.")
-    return FileResponse(asset.local_path, media_type=asset.content_type, filename=asset.filename)
+    return _serve(request, asset, asset.filename, download=True)

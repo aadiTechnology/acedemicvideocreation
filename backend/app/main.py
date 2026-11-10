@@ -13,16 +13,18 @@ from app import db as database
 from app.config import Settings, load_settings
 from app import oidc
 from app.engine_client import EngineClient
+from app.storage import make_store
 from app.routers import admin, lessons, slides, structure, versions, video
 
 logger = logging.getLogger("academic")
 
 
-def create_app(settings: Settings | None = None, oidc_http=None, engine_http=None) -> FastAPI:
+def create_app(settings: Settings | None = None, oidc_http=None, engine_http=None, object_store=None) -> FastAPI:
     settings = settings or load_settings()
     app = FastAPI(title="Aadi Academic Video Creation", version="0.1.0")
     app.state.settings = settings
     app.state.engine = EngineClient(settings, engine_http)
+    app.state.store = object_store if object_store is not None else make_store(settings)  # None: files stay on the local volume
     if settings.database_url:
         database.init_db(settings.database_url)
 

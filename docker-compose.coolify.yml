@@ -22,6 +22,13 @@ services:
       - VIDEO_ENGINE_API_KEY=${VIDEO_ENGINE_API_KEY}
       - VIDEO_ENGINE_TIMEOUT_SECONDS=${VIDEO_ENGINE_TIMEOUT_SECONDS:-30}
       - STORAGE_LOCAL_DIR=/data
+      - STORAGE_PROVIDER=${STORAGE_PROVIDER:-local}
+      - B2_ENDPOINT=${B2_ENDPOINT:-}
+      - B2_KEY_ID=${B2_KEY_ID:-}
+      - B2_APPLICATION_KEY=${B2_APPLICATION_KEY:-}
+      - B2_BUCKET=${B2_BUCKET:-}
+      - B2_REGION=${B2_REGION:-}
+      - B2_URL_EXPIRY_SECONDS=${B2_URL_EXPIRY_SECONDS:-900}
     volumes:
       - academic_storage:/data
     networks:
