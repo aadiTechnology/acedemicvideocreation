@@ -117,7 +117,7 @@ export default function VideoPanel({ versionId, approved, me }: { versionId: str
                   href={`/api/video-jobs/${job.id}/download`} download>Download MP4</a></p>
             <ul>{(s?.assets ?? []).map((a) => (
               <li key={a.id}><a href={`/api/video-jobs/${job.id}/assets/${a.id}`}>{a.filename}</a>{" "}
-                <span className="muted">{a.kind === "video" ? `${a.width}x${a.height}, ${a.fps} fps, ${Math.round(a.duration_seconds ?? 0)} s, ` : ""}{mb(a.size_bytes)}</span></li>))}
+                <span className="muted">{a.kind === "video" ? `${a.width}x${a.height}, ${a.fps} fps, ${Math.round(a.duration_seconds ?? 0)} s, ` : ""}{a.kind === "lesson_bundle" ? "to make this video again in another size or theme, " : ""}{mb(a.size_bytes)}</span></li>))}
             </ul>
             {(s?.assets ?? []).some((a) => a.kind === "quality_report") && <QualityPanel jobId={job.id} />}
           </>}
