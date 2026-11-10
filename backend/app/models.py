@@ -160,6 +160,26 @@ class VideoAsset(Tenanted, Base):
     meta: Mapped[dict] = mapped_column(JSON, default=dict)
 
 
+class AssessmentQuestion(Tenanted, Base):
+    """A practice question for one language version (E11). Drafts are written by authors, approved by a reviewer, and practised by learners."""
+
+    __tablename__ = "assessment_questions"
+    version_id: Mapped[str] = mapped_column(ForeignKey("lesson_versions.id", ondelete="CASCADE"), index=True)
+    position: Mapped[int] = mapped_column(Integer, default=0)
+    kind: Mapped[str] = mapped_column(String(16))  # multiple_choice | image | diagram | conceptual
+    prompt: Mapped[str] = mapped_column(Text)
+    options: Mapped[list] = mapped_column(JSON, default=list)
+    answer_index: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    model_answer: Mapped[str] = mapped_column(Text, default="")
+    explanation: Mapped[str] = mapped_column(Text, default="")
+    image_file: Mapped[str | None] = mapped_column(String(120), nullable=True)  # media/<file> in the lesson package
+    slide: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    status: Mapped[str] = mapped_column(String(16), default="draft")  # draft | approved
+    approved_by: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_by: Mapped[str] = mapped_column(String(64), default="")
+
+
 class ReviewEvent(Tenanted, Base):
     """History of review status changes. Approval is separate from video completion."""
 

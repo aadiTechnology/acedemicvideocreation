@@ -265,3 +265,17 @@ Use a real photograph, a short clip or a before/after pair when a picture of the
 6. The video shows `Photo: <credit>, <licence>` under the picture. The quality report lists every credit (**media_credits**) and reminds the reviewer to confirm each licence: that check is a person's job, not the app's.
 
 Adding a file to an approved version sends it back to draft, like any other change. The ChatGPT prompt does not make media: it adds a `media_ideas` list (what to look for and search words) to `lesson_plan.json` for you to follow up.
+
+## 16. Practice questions
+
+Each lesson version can have 3 to 5 practice questions that check what the learner understood. They are separate from the video: a question never changes the video or sends the lesson back to draft.
+
+1. Open a lesson version with content and go to **4. Practice questions**.
+2. **Make questions from the imported quiz** turns the `quiz` ChatGPT wrote in `lesson_plan.json` into drafts, or press **Add a question** to write your own. A version holds at most 5.
+3. Kinds: **Multiple choice** (2 to 5 choices, one correct), **Picture question** and **Name the part of a diagram** (a picture from the lesson's photos, added in the slide editor under Pictures and clips, plus 2 to 5 choices), and **Open question** (a model answer the learner compares with; it is not marked).
+4. Every question needs an **explanation**, shown straight after the learner answers. A new or changed question is a **draft**.
+5. A reviewer (the **review.decide** permission) presses **Approve**. Only approved questions reach learners. A lesson is *ready* with 3 approved questions.
+6. **Practise** walks through the approved questions one by one: choose an answer, see Correct or Not quite, the right answer and the explanation, then **Next question**. Nothing is stored about the learner.
+7. **Download practice page (HTML)** gives one file with the approved questions and the same instant feedback. It works offline, loads nothing from the internet, and can be put on a school site or sent by email.
+
+Learners and other viewers see approved questions only and never the answers before they answer. Questions are per language version.

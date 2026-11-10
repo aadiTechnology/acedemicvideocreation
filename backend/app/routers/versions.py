@@ -187,7 +187,8 @@ OUTPUT: produce these files and nothing else.
 2. lesson_plan.json with this shape:
    {{"title": "...", "language": "{v.language}", "learning_objectives": ["..."], "source_references": ["textbook name and page"], "key_terms": ["3 to 8 important terms exactly as they appear in the narration"],
      "slides": [{{"slide": 1, "headline": "3 to 6 words, the slide title", "bullets": ["2 to 4 short key points, 3 to 8 words each"]}}],
-     "quiz": [{{"question": "...", "options": ["...", "..."], "answer": "..."}}]}}
+     "quiz": [{{"kind": "multiple_choice", "question": "...", "options": ["...", "...", "..."], "answer": "the exact text of the correct option", "explanation": "1 to 2 sentences: why that answer is right"}}]}}
+   "quiz": write 3 to 5 practice questions. "kind" is "multiple_choice" (2 to 5 options, exactly one correct; "answer" is the exact text of the correct option) or "conceptual" (an open question: no "options", "answer" is a model answer of 1 to 3 sentences). Every question needs an "explanation". Test understanding, not memory of the narration's wording, and keep wrong options plausible. (Picture questions are added by the teacher afterwards.)
    "key_terms" are the important words of the lesson; they are highlighted in the captions when they appear. Use each term exactly as written in the narration.
    Give one "slides" entry for every slide. This short wording is what appears on the slide; the narration appears as captions.
    The video is animated: items appear one by one as the narrator reaches them. Add a "layout" to a slide when a picture explains it better than bullets:

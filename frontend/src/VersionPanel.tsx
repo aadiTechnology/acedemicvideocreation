@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { ApiError, Detail, ImportSummary, Issue, LANGUAGES, Me, versions } from "./api";
+import AssessmentPanel from "./AssessmentPanel";
 import SlideEditor from "./SlideEditor";
 import VideoPanel from "./VideoPanel";
 
@@ -83,7 +84,10 @@ export default function VersionPanel({ versionId, me, onChanged }: { versionId: 
         {d.quiz.length > 0 && <><strong>Quiz</strong><ul>{d.quiz.map((q, i) => <li key={i}>{q.question}</li>)}</ul></>}
         {d.source_references.length > 0 && <><strong>Sources</strong><ul>{d.source_references.map((q) => <li key={q}>{q}</li>)}</ul></>}
 
-        <h4>4. Decision</h4>
+        <h4>4. Practice questions</h4>
+        <AssessmentPanel versionId={versionId} />
+
+        <h4>5. Decision</h4>
         <div className="row">
           <label>Note (required for changes or rejection)<input value={note} onChange={(e) => setNote(e.target.value)} /></label>
           {can("content_operator") && (s === "draft" || s === "changes_required") && <button className="primary" onClick={() => act("submit")}>Send for review</button>}

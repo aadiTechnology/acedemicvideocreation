@@ -19,7 +19,7 @@ from app.identity_client import IdentityClient, IdentityHooks
 from aadi_org.router import create_org_router
 from app.auth import principal
 from app.org import CATALOG, M
-from app.routers import lessons, slides, structure, versions, video
+from app.routers import assessment, lessons, slides, structure, versions, video
 
 logger = logging.getLogger("academic")
 
@@ -88,7 +88,7 @@ def create_app(settings: Settings | None = None, oidc_http=None, identity_http=N
         else:
             app.include_router(oidc.create_router(settings, oidc.OIDCClient(settings, oidc_http)))
     org_router = create_org_router(get_db=database.get_db, principal=principal, M=M, catalog=CATALOG, hooks=IdentityHooks(IdentityClient(settings, identity_http)))
-    for router in (*structure.routers, lessons.router, org_router, versions.router, video.router, slides.router, slides.layouts_router):
+    for router in (*structure.routers, lessons.router, org_router, versions.router, assessment.router, video.router, slides.router, slides.layouts_router):
         app.include_router(router, prefix="/api")
     return app
 
