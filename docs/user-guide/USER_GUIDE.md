@@ -216,3 +216,5 @@ If an import says the language in `lesson_plan.json` does not match (for example
 
 - Captions are larger (54 px) with at most two lines. Important words listed in `key_terms` (in `lesson_plan.json`, or per slide in the slide editor) are highlighted in gold while they are on screen. The ChatGPT prompt asks for `key_terms`.
 - In **Make the video**, **Narration speed** is slow, normal or fast. Quality now defaults to 480p and the voice to Azure.
+
+The slide editor can also change a slide's **module, narration, caption text and visual note**. Use "Make the caption text the same as the narration" to fix the short-captions warning. Saving rewrites `lesson.csv` with every field quoted, so the file stays valid. Narration and caption text cannot be left empty. Tick "Show captions in the preview" to see the caption as it will appear.

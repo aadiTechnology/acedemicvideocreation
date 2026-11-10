@@ -9,6 +9,11 @@ export default function SlideEditor({ versionId, row, onSaved, onClose }: { vers
   const [bullets, setBullets] = useState("");
   const [diagram, setDiagram] = useState("");
   const [terms, setTerms] = useState("");
+  const [module, setModule] = useState("");
+  const [voice, setVoice] = useState("");
+  const [subtitle, setSubtitle] = useState("");
+  const [visual, setVisual] = useState("");
+  const [captions, setCaptions] = useState(false);
   const [at, setAt] = useState(0.92);
   const [img, setImg] = useState("");
   const [recs, setRecs] = useState<Recommendation[]>([]);
@@ -28,6 +33,7 @@ export default function SlideEditor({ versionId, row, onSaved, onClose }: { vers
         setBullets((s.plan.bullets ?? []).join("\n"));
         setDiagram(s.plan.diagram ? JSON.stringify(s.plan.diagram, null, 2) : "");
         setTerms((s.plan.key_terms ?? []).join(", "));
+        setModule(s.row.module); setVoice(s.row.voice_text); setSubtitle(s.row.subtitle_text); setVisual(s.row.visual_instruction);
       } catch (e) { setErr((e as ApiError).message); }
     })();
   }, [versionId, row.slide, row.module]);
@@ -38,7 +44,7 @@ export default function SlideEditor({ versionId, row, onSaved, onClose }: { vers
     if (diagram.trim()) {
       try { parsed = JSON.parse(diagram); } catch { setErr("The diagram is not valid JSON."); return null; }
     }
-    return { headline: headline.trim(), bullets: bullets.split("\n").map((b) => b.trim()).filter(Boolean), layout, diagram: parsed, key_terms: terms.split(",").map((t) => t.trim()).filter(Boolean) };
+    return { headline: headline.trim(), bullets: bullets.split("\n").map((b) => b.trim()).filter(Boolean), layout, diagram: parsed, key_terms: terms.split(",").map((t) => t.trim()).filter(Boolean), module, voice_text: voice, subtitle_text: subtitle, visual_instruction: visual };
   }
   function pickLayout(name: string) {
     setLayout(name);
@@ -52,7 +58,7 @@ export default function SlideEditor({ versionId, row, onSaved, onClose }: { vers
   }
   const preview = () => run(async () => {
     const d = draft(); if (!d) return;
-    const url = await slides.preview(versionId, row.slide, d, at);
+    const url = await slides.preview(versionId, row.slide, d, at, captions);
     if (last.current) URL.revokeObjectURL(last.current);
     last.current = url; setImg(url);
   });
@@ -75,6 +81,13 @@ export default function SlideEditor({ versionId, row, onSaved, onClose }: { vers
             </select>
           </label>
           {info && <p className="muted">{info.purpose}{info.required_diagram_keys.length ? ` Needs: ${info.required_diagram_keys.join(", ")}.` : ""}</p>}
+          <label>Module (the small title above the headline)<input value={module} maxLength={120} onChange={(e) => setModule(e.target.value)} /></label>
+          <label>Narration (what the voice says)<textarea rows={5} value={voice} onChange={(e) => setVoice(e.target.value)} /></label>
+          <label>Caption text (timed from this; normally the same as the narration)
+            <textarea rows={4} value={subtitle} onChange={(e) => setSubtitle(e.target.value)} />
+          </label>
+          <div className="row"><button className="link" onClick={() => setSubtitle(voice)}>Make the caption text the same as the narration</button></div>
+          <label>Visual note (not shown in the video)<input value={visual} maxLength={1000} onChange={(e) => setVisual(e.target.value)} /></label>
           <label>Headline<input value={headline} maxLength={100} onChange={(e) => setHeadline(e.target.value)} /></label>
           <label>Bullets (one per line)<textarea rows={4} value={bullets} onChange={(e) => setBullets(e.target.value)} /></label>
           <label>Key terms for this slide (comma separated, highlighted in captions)<input value={terms} onChange={(e) => setTerms(e.target.value)} /></label>
@@ -89,6 +102,7 @@ export default function SlideEditor({ versionId, row, onSaved, onClose }: { vers
           {msg && <p>{msg}</p>}
         </div>
         <div>
+          <label style={{ display: "inline-flex", gap: 6, alignItems: "center" }}><input type="checkbox" style={{ minWidth: 0 }} checked={captions} onChange={(e) => setCaptions(e.target.checked)} />Show captions in the preview</label>
           <label>Moment shown ({Math.round(at * 100)}% of the slide)
             <input type="range" min={0.05} max={1} step={0.05} value={at} onChange={(e) => setAt(Number(e.target.value))} />
           </label>

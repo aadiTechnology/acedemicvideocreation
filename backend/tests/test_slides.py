@@ -121,3 +121,39 @@ def test_key_terms_are_saved_validated_and_sent_to_preview(client, engine):
     assert client.put(f"/api/lesson-versions/{vid}/slides/1", json={**GOOD, "key_terms": ["x" * 41]}, headers=OP).status_code == 422
     client.post(f"/api/lesson-versions/{vid}/slides/1/preview", json={})
     assert engine.previews[-1]["plan"]["key_terms"] == ["refraction", "normal"]
+
+
+def package_csv(client, vid):
+    raw = client.get(f"/api/lesson-versions/{vid}/package").content
+    with zipfile.ZipFile(io.BytesIO(raw)) as zf:
+        return zf.read("lesson.csv").decode("utf-8")
+
+
+def test_narration_subtitles_and_module_can_be_edited(client):
+    vid = approved_version(client)
+    body = {**GOOD, "module": "Light and glass", "voice_text": 'Light bends, slowly, in "glass".', "subtitle_text": 'Light bends, slowly, in "glass".'}
+    r = client.put(f"/api/lesson-versions/{vid}/slides/1", json=body, headers=OP)
+    assert r.status_code == 200, r.text
+    got = client.get(f"/api/lesson-versions/{vid}/slides/1").json()["row"]
+    assert (got["module"], got["voice_text"], got["subtitle_text"]) == ("Light and glass", 'Light bends, slowly, in "glass".', 'Light bends, slowly, in "glass".')
+    other = client.get(f"/api/lesson-versions/{vid}/slides/2").json()["row"]
+    assert other["voice_text"].startswith("Chlorophyll captures")  # the other slide is untouched
+    import csv as csvmod
+    rows = list(csvmod.reader(io.StringIO(package_csv(client, vid))))
+    assert rows[0] == ["Slide", "Module", "voice_text", "subtitle_text", "visual_instruction"] and len(rows) == 3
+    assert client.get(f"/api/lesson-versions/{vid}").json()["events"][-1]["note"].endswith("Its text was changed.")
+
+
+def test_text_edits_cannot_be_empty_and_unedited_text_keeps_the_csv_bytes(client):
+    vid = approved_version(client)
+    before = package_csv(client, vid)
+    assert client.put(f"/api/lesson-versions/{vid}/slides/1", json={**GOOD, "voice_text": "   "}, headers=OP).status_code == 422
+    r = client.put(f"/api/lesson-versions/{vid}/slides/1", json=GOOD, headers=OP)  # only the plan changed
+    assert r.status_code == 200 and package_csv(client, vid) == before
+
+
+def test_preview_uses_the_drafted_narration(client, engine):
+    vid = approved_version(client)
+    client.post(f"/api/lesson-versions/{vid}/slides/1/preview", json={"plan": GOOD, "voice_text": "Drafted words here.", "subtitle_text": "Drafted words here.", "subtitles": True})
+    sent = engine.previews[-1]["slide"]
+    assert (sent["voice_text"], sent["subtitle_text"]) == ("Drafted words here.", "Drafted words here.")

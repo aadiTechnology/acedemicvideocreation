@@ -5,6 +5,7 @@ so an edit can never make a package the engine would reject. Like an import, it 
 
 from __future__ import annotations
 
+import csv
 import hashlib
 import io
 import json
@@ -20,7 +21,7 @@ from app import models as m
 from app.auth import CurrentUser, current_user, require_roles
 from app.db import get_db
 from app.engine_client import EngineRejected, EngineUnavailable
-from app.package import ImportRejected, _diagram_problem, parse_upload
+from app.package import CANONICAL_COLUMNS, ImportRejected, _diagram_problem, parse_upload
 from app.routers.structure import owned
 from app.routers.versions import _log, _storage
 from app.routers.video import client_of
@@ -36,6 +37,11 @@ class SlideIn(BaseModel):
     layout: str = "bullets"
     diagram: dict | None = None
     key_terms: list[str] = []
+    # the slide's text in lesson.csv; left out (None) means unchanged
+    module: str | None = Field(default=None, max_length=120)
+    voice_text: str | None = Field(default=None, max_length=6000)
+    subtitle_text: str | None = Field(default=None, max_length=6000)
+    visual_instruction: str | None = Field(default=None, max_length=1000)
 
 
 class PreviewIn(BaseModel):
@@ -43,6 +49,9 @@ class PreviewIn(BaseModel):
     at: float = 0.92
     profile: str = "480p24"
     subtitles: bool = False
+    voice_text: str | None = None      # drafted narration and caption text, to preview before saving
+    subtitle_text: str | None = None
+    module: str | None = None
 
 
 def _plan_entry(slide: SlideIn, number: int) -> dict:
@@ -101,6 +110,24 @@ def save_slide(version_id: str, number: int, body: SlideIn, request: Request, db
             if not info.is_dir():
                 members[info.orig_filename] = zf.read(info)
     members["lesson_plan.json"] = json.dumps(plan, ensure_ascii=False, indent=2).encode("utf-8")
+    texts = {k: getattr(body, k) for k in ("module", "voice_text", "subtitle_text", "visual_instruction") if getattr(body, k) is not None}
+    text_changed = any(str(v.slides and _row(v, number).get(k, "")) != val.strip() for k, val in texts.items())
+    if text_changed:  # rewrite lesson.csv with the edited cells; every field is quoted so the file is always valid CSV
+        empty = [k for k, val in texts.items() if not val.strip()]
+        if empty:
+            raise HTTPException(422, {"message": f"These cannot be empty: {', '.join(empty)}.", "issues": [{"code": "empty_cell", "message": f"{k} cannot be empty."} for k in empty]})
+        buf = io.StringIO()
+        w = csv.writer(buf, quoting=csv.QUOTE_ALL, lineterminator="\n")
+        cols = list(CANONICAL_COLUMNS) + (["image"] if any(s.get("image") for s in v.slides) else [])
+        w.writerow(cols)
+        for s in v.slides:
+            vals = {"Slide": s["slide"], "Module": s["module"], "voice_text": s["voice_text"], "subtitle_text": s["subtitle_text"],
+                    "visual_instruction": s["visual_instruction"], "image": s.get("image", "")}
+            if s["slide"] == number:
+                vals.update({"Module": texts.get("module", s["module"]).strip(), "voice_text": texts.get("voice_text", s["voice_text"]).strip(),
+                             "subtitle_text": texts.get("subtitle_text", s["subtitle_text"]).strip(), "visual_instruction": texts.get("visual_instruction", s["visual_instruction"]).strip()})
+            w.writerow([vals[c] for c in cols])
+        members["lesson.csv"] = buf.getvalue().encode("utf-8")
     blob = io.BytesIO()
     with zipfile.ZipFile(blob, "w", zipfile.ZIP_DEFLATED) as zf:
         for name, data in members.items():
@@ -116,7 +143,7 @@ def save_slide(version_id: str, number: int, body: SlideIn, request: Request, db
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(parsed.zip_bytes)
     if v.review_status in ("in_review", "approved", "changes_required", "rejected"):
-        _log(db, v, user, "content_changed", "draft", f"Slide {number} was edited.")
+        _log(db, v, user, "content_changed", "draft", f"Slide {number} was edited." + (" Its text was changed." if text_changed else ""))
     v.slides, v.lesson_plan, v.package_path, v.package_sha256 = parsed.slides, parsed.lesson_plan, str(path), hashlib.sha256(parsed.zip_bytes).hexdigest()
     v.imported_at, v.imported_by = m.utcnow(), user.user_id
     db.commit()
@@ -134,7 +161,8 @@ def preview_slide(version_id: str, number: int, body: PreviewIn, request: Reques
             raise HTTPException(422, problem)
     lesson = db.get(m.Lesson, v.lesson_id)
     payload = {"language": v.language, "title": (v.lesson_plan or {}).get("title") or lesson.title, "total": len(v.slides or []),
-               "slide": {"Slide": number, "Module": row["module"], "voice_text": row["voice_text"], "subtitle_text": row["subtitle_text"]},
+               "slide": {"Slide": number, "Module": body.module or row["module"], "voice_text": body.voice_text or row["voice_text"],
+                         "subtitle_text": body.subtitle_text or row["subtitle_text"]},
                "plan": entry, "key_terms": (v.lesson_plan or {}).get("key_terms", []), "at": body.at, "profile": body.profile, "subtitles": body.subtitles}
     png = _engine_call(lambda: client_of(request).preview(payload))
     return Response(png, media_type="image/png", headers={"Cache-Control": "no-store"})
