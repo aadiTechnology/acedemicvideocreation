@@ -5,12 +5,12 @@ export const LANGUAGES: { code: Language; label: string }[] = [
   { code: "mr-IN", label: "Marathi" },
 ];
 
-export interface Named { id: string; name?: string; title?: string; number?: number; class_id?: string; subject_id?: string; chapter_id?: string }
+export interface Named { id: string; course_type?: string; name?: string; title?: string; number?: number; class_id?: string; subject_id?: string; chapter_id?: string }
 export interface Version { id: string; lesson_id: string; language: Language; review_status: string; publication_status: string | null }
 export interface LessonRow {
   id: string; topic_id: string; title: string; description: string; learning_objectives: string[]; target_audience: string;
   expected_duration_minutes: number; source_references: string[]; versions: Version[];
-  class_name: string; subject_name: string; chapter_number: number; chapter_title: string; topic_title: string;
+  class_name: string; course_type?: string; subject_name: string; chapter_number: number; chapter_title: string; topic_title: string;
 }
 
 export interface Issue { code: string; message: string; row?: number; column?: string; severity?: string }

@@ -171,13 +171,42 @@ def _parse_csv(raw: bytes, issues: list[Issue], assets: set[str]) -> list[dict]:
 
 
 LAYOUTS = ("bullets", "flow", "equation", "cycle", "compare", "illustration",
-           "text_illustration", "timeline", "labelled_diagram", "experiment", "recap")
+           "text_illustration", "timeline", "labelled_diagram", "experiment", "recap", "code")
 ILLUSTRATIONS = ("refraction", "photosynthesis", "water_cycle", "leaf_section")
 
 
 def _texts(value, low: int, high: int) -> bool:
     items = [(v.get("label") if isinstance(v, dict) else v) for v in value] if isinstance(value, list) else None
     return items is not None and low <= len(items) <= high and all(isinstance(x, str) and x.strip() and len(x) <= 60 for x in items)
+
+
+CODE_LANGUAGES = ("python", "javascript", "java", "c", "cpp", "sql", "bash", "html", "json")
+
+
+def _code_problem(diagram: dict) -> str | None:
+    code = diagram.get("code")
+    if not isinstance(code, str) or not code.strip():
+        return "code needs diagram.code: the code as text (up to 18 lines of up to 80 characters)."
+    lines = code.rstrip("\n").split("\n")
+    if len(lines) > 18 or any(len(ln) > 80 for ln in lines):
+        return "code: at most 18 lines, each up to 80 characters. Show a shorter excerpt."
+    if diagram.get("language", "python") not in CODE_LANGUAGES:
+        return f"code language must be one of: {', '.join(CODE_LANGUAGES)}."
+    steps = diagram.get("steps")
+    if steps is None:
+        return None
+    if not isinstance(steps, list) or not 1 <= len(steps) <= 12:
+        return "code steps: 1 to 12 items."
+    for n, st in enumerate(steps, 1):
+        nums = st.get("lines", [st["line"]] if isinstance(st, dict) and "line" in st else None) if isinstance(st, dict) else None
+        if not (isinstance(nums, list) and nums and all(isinstance(x, int) and 1 <= x <= len(lines) for x in nums)):
+            return f"code step {n}: lines must be line numbers between 1 and {len(lines)}."
+        if "output" in st and not (isinstance(st["output"], str) and len(st["output"]) <= 200):
+            return f"code step {n}: output must be text up to 200 characters."
+        vars_ = st.get("vars", {})
+        if not (isinstance(vars_, dict) and len(vars_) <= 6 and all(isinstance(k, str) and 0 < len(k) <= 30 and len(str(v)) <= 40 for k, v in vars_.items())):
+            return f"code step {n}: vars is up to 6 names with short values."
+    return None
 
 
 def _terms_ok(value) -> bool:
@@ -239,6 +268,10 @@ def _diagram_problem(item: dict) -> str | None:
             return "experiment needs diagram.aim and diagram.procedure (1 to 4 short steps); materials, observation and conclusion are optional."
         if "materials" in diagram and not _texts(diagram["materials"], 1, 6):
             return "experiment materials: 1 to 6 short items."
+    if layout == "code":
+        problem = _code_problem(diagram)
+        if problem:
+            return problem
     if layout == "recap":
         if not _texts(item.get("bullets"), 2, 5):
             return "recap needs 2 to 5 short bullets (the key points)."

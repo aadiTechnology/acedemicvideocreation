@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError, LANGUAGES, Language, LessonRow, Me, Named, versions } from "./api";
+import { COURSE_TYPES, labelsFor } from "./labels";
 import VersionPanel from "./VersionPanel";
 
 type Tab = "lessons" | "structure";
@@ -30,6 +31,8 @@ function StructureTab({ s }: { s: ReturnType<typeof useStructure> }) {
   const [err, setErr] = useState("");
   const [name, setName] = useState({ cls: "", subject: "", chapterNo: "", chapter: "", topic: "" });
   const [parent, setParent] = useState({ cls: "", subject: "", chapter: "" });
+  const [ctype, setCtype] = useState("school");
+  const L = labelsFor(s.classes.find((c) => c.id === parent.cls)?.course_type);
   const run = async (fn: () => Promise<unknown>) => {
     setErr("");
     try { await fn(); await s.reload(); } catch (e) { setErr((e as ApiError).message); }
@@ -39,30 +42,31 @@ function StructureTab({ s }: { s: ReturnType<typeof useStructure> }) {
   return (
     <div className="grid2">
       <div className="card">
-        <h3>Classes</h3>
+        <h3>Classes and courses</h3>
         <div className="row">
-          <label>New class<input value={name.cls} onChange={(e) => setName({ ...name, cls: e.target.value })} placeholder="Class 7" /></label>
-          <button className="primary" disabled={!name.cls} onClick={() => run(async () => { await api.create("/classes", { name: name.cls }); setName({ ...name, cls: "" }); })}>Add</button>
+          <label>Type<select value={ctype} onChange={(e) => setCtype(e.target.value)}>{COURSE_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}</select></label>
+          <label>{labelsFor(ctype).newTop}<input value={name.cls} onChange={(e) => setName({ ...name, cls: e.target.value })} placeholder={labelsFor(ctype).topPlaceholder} /></label>
+          <button className="primary" disabled={!name.cls} onClick={() => run(async () => { await api.create("/classes", { name: name.cls, course_type: ctype }); setName({ ...name, cls: "" }); })}>Add</button>
         </div>
-        <ul>{s.classes.map((c) => <li key={c.id}>{c.name} <button className="link" onClick={() => run(() => api.remove(`/classes/${c.id}`))}>remove</button></li>)}</ul>
+        <ul>{s.classes.map((c) => <li key={c.id}>{c.name} <span className="chip">{c.course_type === "technical" ? "course" : "class"}</span> <button className="link" onClick={() => run(() => api.remove(`/classes/${c.id}`))}>remove</button></li>)}</ul>
       </div>
       <div className="card">
-        <h3>Subjects, chapters, topics</h3>
+        <h3>Subjects or tracks, chapters or modules, topics</h3>
         <div className="row">
-          <label>Class<select value={parent.cls} onChange={(e) => setParent({ cls: e.target.value, subject: "", chapter: "" })}><option value="">Select</option>{s.classes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
-          <label>New subject<input value={name.subject} onChange={(e) => setName({ ...name, subject: e.target.value })} placeholder="Science" /></label>
-          <button className="primary" disabled={!parent.cls || !name.subject} onClick={() => run(async () => { await api.create("/subjects", { class_id: parent.cls, name: name.subject }); setName({ ...name, subject: "" }); })}>Add subject</button>
+          <label>{L.top}<select value={parent.cls} onChange={(e) => setParent({ cls: e.target.value, subject: "", chapter: "" })}><option value="">Select</option>{s.classes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
+          <label>New {L.subject.toLowerCase()}<input value={name.subject} onChange={(e) => setName({ ...name, subject: e.target.value })} placeholder="Science" /></label>
+          <button className="primary" disabled={!parent.cls || !name.subject} onClick={() => run(async () => { await api.create("/subjects", { class_id: parent.cls, name: name.subject }); setName({ ...name, subject: "" }); })}>Add {L.subject.toLowerCase()}</button>
         </div>
         <div className="row" style={{ marginTop: 12 }}>
-          <label>Subject<select value={parent.subject} onChange={(e) => setParent({ ...parent, subject: e.target.value, chapter: "" })}><option value="">Select</option>{subjectsOf.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
+          <label>{L.subject}<select value={parent.subject} onChange={(e) => setParent({ ...parent, subject: e.target.value, chapter: "" })}><option value="">Select</option>{subjectsOf.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
           <label>No.<input style={{ minWidth: 60, width: 70 }} value={name.chapterNo} onChange={(e) => setName({ ...name, chapterNo: e.target.value })} /></label>
-          <label>New chapter<input value={name.chapter} onChange={(e) => setName({ ...name, chapter: e.target.value })} placeholder="Nutrition in Plants" /></label>
-          <button className="primary" disabled={!parent.subject || !name.chapter || !Number(name.chapterNo)} onClick={() => run(async () => { await api.create("/chapters", { subject_id: parent.subject, number: Number(name.chapterNo), title: name.chapter }); setName({ ...name, chapter: "", chapterNo: "" }); })}>Add chapter</button>
+          <label>New {L.chapter.toLowerCase()}<input value={name.chapter} onChange={(e) => setName({ ...name, chapter: e.target.value })} placeholder="Nutrition in Plants" /></label>
+          <button className="primary" disabled={!parent.subject || !name.chapter || !Number(name.chapterNo)} onClick={() => run(async () => { await api.create("/chapters", { subject_id: parent.subject, number: Number(name.chapterNo), title: name.chapter }); setName({ ...name, chapter: "", chapterNo: "" }); })}>Add {L.chapter.toLowerCase()}</button>
         </div>
         <div className="row" style={{ marginTop: 12 }}>
-          <label>Chapter<select value={parent.chapter} onChange={(e) => setParent({ ...parent, chapter: e.target.value })}><option value="">Select</option>{chaptersOf.map((x) => <option key={x.id} value={x.id}>{x.number}. {x.title}</option>)}</select></label>
-          <label>New topic<input value={name.topic} onChange={(e) => setName({ ...name, topic: e.target.value })} placeholder="Photosynthesis" /></label>
-          <button className="primary" disabled={!parent.chapter || !name.topic} onClick={() => run(async () => { await api.create("/topics", { chapter_id: parent.chapter, title: name.topic }); setName({ ...name, topic: "" }); })}>Add topic</button>
+          <label>{L.chapter}<select value={parent.chapter} onChange={(e) => setParent({ ...parent, chapter: e.target.value })}><option value="">Select</option>{chaptersOf.map((x) => <option key={x.id} value={x.id}>{x.number}. {x.title}</option>)}</select></label>
+          <label>New {L.topic.toLowerCase()}<input value={name.topic} onChange={(e) => setName({ ...name, topic: e.target.value })} placeholder="Photosynthesis" /></label>
+          <button className="primary" disabled={!parent.chapter || !name.topic} onClick={() => run(async () => { await api.create("/topics", { chapter_id: parent.chapter, title: name.topic }); setName({ ...name, topic: "" }); })}>Add {L.topic.toLowerCase()}</button>
         </div>
         <Errors message={err} />
       </div>
@@ -75,6 +79,7 @@ function NewLesson({ s, onCreated }: { s: ReturnType<typeof useStructure>; onCre
   const [langs, setLangs] = useState<Language[]>(["en-IN"]);
   const [err, setErr] = useState("");
   const subjects = s.subjects.filter((x) => x.class_id === f.cls);
+  const L = labelsFor(s.classes.find((c) => c.id === f.cls)?.course_type);
   const chapters = s.chapters.filter((x) => x.subject_id === f.subject);
   const topics = s.topics.filter((x) => x.chapter_id === f.chapter);
   const toggle = (c: Language) => setLangs((l) => (l.includes(c) ? l.filter((x) => x !== c) : [...l, c]));
@@ -93,10 +98,10 @@ function NewLesson({ s, onCreated }: { s: ReturnType<typeof useStructure>; onCre
     <div className="card">
       <h3>New lesson</h3>
       <div className="row">
-        <label>Class<select value={f.cls} onChange={(e) => setF({ ...f, cls: e.target.value, subject: "", chapter: "", topic: "" })}><option value="">Select</option>{s.classes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
-        <label>Subject<select value={f.subject} onChange={(e) => setF({ ...f, subject: e.target.value, chapter: "", topic: "" })}><option value="">Select</option>{subjects.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
-        <label>Chapter<select value={f.chapter} onChange={(e) => setF({ ...f, chapter: e.target.value, topic: "" })}><option value="">Select</option>{chapters.map((x) => <option key={x.id} value={x.id}>{x.number}. {x.title}</option>)}</select></label>
-        <label>Topic<select value={f.topic} onChange={(e) => setF({ ...f, topic: e.target.value })}><option value="">Select</option>{topics.map((x) => <option key={x.id} value={x.id}>{x.title}</option>)}</select></label>
+        <label>{L.top}<select value={f.cls} onChange={(e) => setF({ ...f, cls: e.target.value, subject: "", chapter: "", topic: "" })}><option value="">Select</option>{s.classes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
+        <label>{L.subject}<select value={f.subject} onChange={(e) => setF({ ...f, subject: e.target.value, chapter: "", topic: "" })}><option value="">Select</option>{subjects.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
+        <label>{L.chapter}<select value={f.chapter} onChange={(e) => setF({ ...f, chapter: e.target.value, topic: "" })}><option value="">Select</option>{chapters.map((x) => <option key={x.id} value={x.id}>{x.number}. {x.title}</option>)}</select></label>
+        <label>{L.topic}<select value={f.topic} onChange={(e) => setF({ ...f, topic: e.target.value })}><option value="">Select</option>{topics.map((x) => <option key={x.id} value={x.id}>{x.title}</option>)}</select></label>
       </div>
       <div className="row" style={{ marginTop: 12 }}>
         <label>Lesson title<input value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} /></label>
@@ -141,7 +146,7 @@ function LessonsTab({ s, me }: { s: ReturnType<typeof useStructure>; me: Me }) {
         <Errors message={err} />
         {rows.length === 0 ? <p className="muted">No lessons yet. Add a class, subject, chapter and topic under Structure, then create a lesson.</p> : (
           <table>
-            <thead><tr><th>Class</th><th>Subject</th><th>Chapter</th><th>Topic</th><th>Lesson</th><th>Languages</th></tr></thead>
+            <thead><tr><th>Class / course</th><th>Subject / track</th><th>Chapter / module</th><th>Topic</th><th>Lesson</th><th>Languages</th></tr></thead>
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id} className="pick" onClick={() => setOpen(open?.id === r.id ? null : r)}>

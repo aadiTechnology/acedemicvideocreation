@@ -1,0 +1,188 @@
+{
+  "title": "Python for Beginners: variables and loops",
+  "language": "en-IN",
+  "learning_objectives": [
+    "Store values in variables",
+    "Repeat work with a for loop",
+    "Choose a path with if and else"
+  ],
+  "source_references": [
+    "Original lesson written for this demo"
+  ],
+  "key_terms": [
+    "variable",
+    "loop",
+    "total",
+    "print"
+  ],
+  "slides": [
+    {
+      "slide": 1,
+      "headline": "Python for Beginners",
+      "bullets": [
+        "Variables store values",
+        "A loop repeats work",
+        "A decision chooses a path"
+      ]
+    },
+    {
+      "slide": 2,
+      "headline": "Variables",
+      "layout": "code",
+      "diagram": {
+        "language": "python",
+        "code": "age = 12\nname = \"Asha\"\nprint(name, age)",
+        "steps": [
+          {
+            "lines": [
+              1
+            ],
+            "vars": {
+              "age": "12"
+            }
+          },
+          {
+            "lines": [
+              1
+            ],
+            "vars": {
+              "age": "12"
+            }
+          },
+          {
+            "lines": [
+              2
+            ],
+            "vars": {
+              "name": "\"Asha\""
+            }
+          },
+          {
+            "lines": [
+              3
+            ],
+            "output": "Asha 12"
+          }
+        ]
+      }
+    },
+    {
+      "slide": 3,
+      "headline": "A loop in Python",
+      "key_terms": [
+        "loop",
+        "total"
+      ],
+      "layout": "code",
+      "diagram": {
+        "language": "python",
+        "code": "total = 0\nfor n in [1, 2, 3]:\n    total = total + n\n    print(total)\nprint(\"done\")",
+        "steps": [
+          {
+            "lines": [
+              1
+            ],
+            "vars": {
+              "total": "0"
+            }
+          },
+          {
+            "lines": [
+              2
+            ]
+          },
+          {
+            "lines": [
+              2,
+              3,
+              4
+            ],
+            "vars": {
+              "n": "1",
+              "total": "1"
+            },
+            "output": "1"
+          },
+          {
+            "lines": [
+              3,
+              4
+            ],
+            "vars": {
+              "n": "3",
+              "total": "6"
+            },
+            "output": "3\n6"
+          },
+          {
+            "lines": [
+              5
+            ],
+            "output": "done"
+          }
+        ]
+      }
+    },
+    {
+      "slide": 4,
+      "headline": "Making a decision",
+      "layout": "code",
+      "diagram": {
+        "language": "python",
+        "code": "score = 70\nif score >= 50:\n    print(\"pass\")\nelse:\n    print(\"try again\")",
+        "steps": [
+          {
+            "lines": [
+              1
+            ],
+            "vars": {
+              "score": "70"
+            }
+          },
+          {
+            "lines": [
+              1
+            ],
+            "vars": {
+              "score": "70"
+            }
+          },
+          {
+            "lines": [
+              2
+            ],
+            "vars": {
+              "score >= 50": "True"
+            }
+          },
+          {
+            "lines": [
+              3
+            ],
+            "output": "pass"
+          },
+          {
+            "lines": [
+              4,
+              5
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slide": 5,
+      "headline": "Remember",
+      "layout": "recap",
+      "bullets": [
+        "A variable stores a value",
+        "A loop repeats steps for each item",
+        "An if statement chooses a path"
+      ],
+      "diagram": {
+        "question": "Which would you use to add up a list of marks?"
+      }
+    }
+  ],
+  "quiz": []
+}

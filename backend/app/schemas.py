@@ -15,6 +15,7 @@ class _Out(BaseModel):
 class ClassIn(BaseModel):
     name: str = Field(min_length=1, max_length=80)
     sort_order: int = 0
+    course_type: Literal["school", "technical"] = "school"
 
 
 class ClassOut(_Out, ClassIn):
@@ -99,6 +100,7 @@ class LessonRow(LessonOut):
     """List row with the academic path for display."""
 
     class_name: str
+    course_type: str = "school"
     subject_name: str
     chapter_number: int
     chapter_title: str

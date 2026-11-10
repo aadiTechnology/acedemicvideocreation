@@ -177,7 +177,7 @@ def recommend_layout(version_id: str, number: int, request: Request, db: Session
     subject = db.get(m.Subject, db.get(m.Chapter, topic.chapter_id).subject_id)
     klass = db.get(m.SchoolClass, subject.class_id)
     body = {"subject": subject.name, "topic": f"{topic.title} {row['module']}", "objective": " ".join(lesson.learning_objectives),
-            "class_name": klass.name, "narration": row["voice_text"], "limit": 3}
+            "class_name": klass.name, "course_type": klass.course_type, "narration": row["voice_text"], "limit": 3}
     return _engine_call(lambda: client_of(request).recommend(body))
 
 

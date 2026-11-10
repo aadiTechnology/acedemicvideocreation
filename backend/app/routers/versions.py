@@ -152,14 +152,25 @@ def prompt_spec(version_id: str, db: Session = Depends(get_db), user: CurrentUse
     language = LANGUAGE_NAMES.get(v.language, v.language)
     words = lesson.expected_duration_minutes * WORDS_PER_MINUTE
     objectives = "\n".join(f"- {o}" for o in lesson.learning_objectives) or "- (none given: derive 3 to 5 from the topic)"
-    return f"""You are an expert {subject.name} teacher creating a narrated teaching video for {klass.name} students.
+    technical = klass.course_type == "technical"
+    intro = (f"You are an expert {subject.name} instructor creating a narrated technical course video for {klass.name} learners."
+             if technical else f"You are an expert {subject.name} teacher creating a narrated teaching video for {klass.name} students.")
+    path = (f"- Course: {klass.name}   Track: {subject.name}   Module {chapter.number}: {chapter.title}   Lesson topic: {topic.title}"
+            if technical else f"- Class: {klass.name}   Subject: {subject.name}   Chapter {chapter.number}: {chapter.title}   Topic: {topic.title}")
+    audience = lesson.target_audience or (f"{klass.name} learners; assume no prior knowledge unless the objectives say otherwise" if technical else klass.name + " students")
+    rule = ("Technically correct: every code sample must be complete, runnable and idiomatic, and the output and variable values you show must be exactly what the code produces. "
+            "Appropriate for the learners' level; no copyrighted course text copied word for word."
+            if technical else f"Scientifically correct and appropriate for {klass.name}; no copyrighted textbook text copied word for word.")
+    code_use = ("This is a technical course: explain code with the \"code\" layout on most slides that teach a concept, one small idea per slide. "
+                if technical else "")
+    return f"""{intro}
 
 LESSON
-- Class: {klass.name}   Subject: {subject.name}   Chapter {chapter.number}: {chapter.title}   Topic: {topic.title}
+{path}
 - Lesson title: {lesson.title}
 - Language of ALL narration, subtitles and slide text: {language}
 - Target length: {lesson.expected_duration_minutes} minutes of narration, about {words} words in total
-- Audience: {lesson.target_audience or klass.name + " students"}
+- Audience: {audience}
 - Learning objectives:
 {objectives}
 
@@ -172,7 +183,7 @@ OUTPUT: produce these files and nothing else.
    - subtitle_text: the caption text shown while the narrator speaks. Use the SAME words as voice_text (you may shorten a little).
      Captions are timed from it, so a short summary here makes the captions run out long before the narration ends.
    - visual_instruction: what the slide should show (diagram, labelled picture, animation idea); do not name image files
-   Use 8 to 14 slides. Quote any cell that contains a comma. Do not add other columns.
+   Use 8 to 14 slides. Put EVERY text cell in double quotes, and close the quote at the end of each row (for example: 1,"Introduction","...","...","..."). Do not add other columns.
 2. lesson_plan.json with this shape:
    {{"title": "...", "language": "{v.language}", "learning_objectives": ["..."], "source_references": ["textbook name and page"], "key_terms": ["3 to 8 important terms exactly as they appear in the narration"],
      "slides": [{{"slide": 1, "headline": "3 to 6 words, the slide title", "bullets": ["2 to 4 short key points, 3 to 8 words each"]}}],
@@ -200,10 +211,13 @@ OUTPUT: produce these files and nothing else.
    - "experiment": a real-world activity: {{"layout": "experiment", "diagram": {{"aim": "...", "materials": ["..."], "procedure": ["1 to 4 short steps"], "observation": "...", "conclusion": "..."}}}}
    - "recap": the closing summary slide, 2 to 5 key points in "bullets" and an optional question: {{"layout": "recap", "bullets": ["..."], "diagram": {{"question": "..."}}}}
    Choose the layout that fits the content: a process or steps -> flow; two things compared -> compare; a repeating loop -> cycle; a formula or reaction -> equation; events over time -> timeline; naming the parts of something -> labelled_diagram; an activity or experiment -> experiment; a closing summary -> recap; otherwise bullets. Do not use the same layout for every slide.
+   - "code": a code walk-through: a syntax-highlighted editor where the lines being explained are highlighted as the narrator reaches them, with an optional Output console and Variables table. Nothing is run, so write the real output and values yourself:
+       {{"layout": "code", "diagram": {{"language": "python", "code": "x = 5\\nprint(x)", "steps": [{{"lines": [1], "vars": {{"x": "5"}}}}, {{"lines": [2], "output": "5"}}]}}}}
+     code: up to 18 lines of up to 80 characters (a short excerpt, not a whole program). steps (up to 12) follow the order in which the narrator explains the code: "lines" are 1-based line numbers, "output" is what is printed at that step, "vars" are the variable values after that step (up to 6). Languages: python, javascript, java, c, cpp, sql, bash, html, json. Write one narrated sentence per step. {code_use}
    Without a layout, the bullets are shown one by one. Keep every label short (1 to 4 words) and in the lesson language. List the items in the order the narrator mentions them.
 
 RULES
-- Scientifically correct and appropriate for {klass.name}; no copyrighted textbook text copied word for word.
+- {rule}
 - Keep the spoken text and the subtitle text in the same language ({language}).
 - Return the CSV and JSON as two separate code blocks so they can be saved as lesson.csv and lesson_plan.json.
 """

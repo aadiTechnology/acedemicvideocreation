@@ -53,6 +53,7 @@ class SchoolClass(Tenanted, Base):
     __table_args__ = (UniqueConstraint("tenant_id", "name", name="uq_class_name"),)
     name: Mapped[str] = mapped_column(String(80))
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    course_type: Mapped[str] = mapped_column(String(16), default="school", server_default="school")  # school (class, subject, chapter, topic) or technical (course, track, module, lesson)
 
 
 class Subject(Tenanted, Base):

@@ -50,7 +50,7 @@ def list_lessons(
     rows = []
     for lesson, topic, chapter, subject, klass in db.execute(q):
         base = _out(db, lesson).model_dump()
-        rows.append(schemas.LessonRow(**base, class_name=klass.name, subject_name=subject.name,
+        rows.append(schemas.LessonRow(**base, class_name=klass.name, course_type=klass.course_type, subject_name=subject.name,
                                       chapter_number=chapter.number, chapter_title=chapter.title, topic_title=topic.title))
     return rows
 

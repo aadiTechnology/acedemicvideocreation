@@ -218,3 +218,17 @@ If an import says the language in `lesson_plan.json` does not match (for example
 - In **Make the video**, **Narration speed** is slow, normal or fast. Quality now defaults to 480p and the voice to Azure.
 
 The slide editor can also change a slide's **module, narration, caption text and visual note**. Use "Make the caption text the same as the narration" to fix the short-captions warning. Saving rewrites `lesson.csv` with every field quoted, so the file stays valid. Narration and caption text cannot be left empty. Tick "Show captions in the preview" to see the caption as it will appear.
+
+## 12. Technical courses and the code layout
+
+**Courses next to classes.** In **Structure**, choose the **Type** when you add the top-level item: *School* (class, subject, chapter, topic) or *Technical course* (course, track, module, lesson topic). The labels in the forms follow the type. Existing classes are School. The ChatGPT prompt changes with the type: a technical course asks for learner level, complete runnable code and exact output.
+
+**The code layout** (`"layout": "code"`) shows code in an editor, highlights the lines being explained as the narrator reaches them, and can show an **Output** console and a **Variables** table:
+
+    {"layout": "code", "diagram": {"language": "python", "code": "x = 5\nprint(x)",
+      "steps": [{"lines": [1], "vars": {"x": "5"}}, {"lines": [2], "output": "5"}]}}
+
+- Write **one narrated sentence per step**, in the order of the steps.
+- Up to 18 lines of up to 80 characters and 12 steps; languages: python, javascript, java, c, cpp, sql, bash, html, json.
+- **The code is not run.** The output and variable values are what the author writes, so check them in **Edit slide > Preview** before approving.
+- A complete sample lesson is in `docs/user-guide/sample/python/` (lesson.csv and lesson_plan.json, 5 slides).
