@@ -144,8 +144,8 @@ function Practice({ versionId, questions }: { versionId: string; questions: Ques
       {q.kind !== "conceptual" ? (
         <div>{q.options.map((o, n) => {
           const state = result ? (n === result.correct_index ? "right" : n === picked ? "wrong" : "") : "";
-          return <button key={n} className={`link ${state}`} disabled={!!result} style={{ display: "block", textAlign: "left", margin: "4px 0", fontWeight: state ? 700 : 400, color: state === "right" ? "#1b7a3d" : state === "wrong" ? "#b3261e" : undefined }}
-            onClick={() => { setPicked(n); answer({ choice: n }); }}>{String.fromCharCode(65 + n)}. {o}</button>;
+          return <button key={n} className={`link ${state}`} aria-disabled={!!result} style={{ display: "block", textAlign: "left", margin: "4px 0", fontWeight: state ? 700 : 400, color: state === "right" ? "#1b7a3d" : state === "wrong" ? "#b3261e" : undefined, cursor: result ? "default" : "pointer" }}
+            onClick={() => { if (result) return; setPicked(n); answer({ choice: n }); }}>{String.fromCharCode(65 + n)}. {o}</button>;
         })}</div>
       ) : (
         <div><textarea aria-label="Your answer" rows={3} value={text} disabled={!!result} onChange={(e) => setText(e.target.value)} />
