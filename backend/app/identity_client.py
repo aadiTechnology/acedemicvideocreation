@@ -36,6 +36,8 @@ class IdentityClient:
                 detail = r.json().get("detail", "")
             except ValueError:
                 detail = ""
+            if r.status_code == 422:  # a validation problem: in practice the email address
+                return {"ok": False, "message": "Aadi Identity did not accept this email address. Check it and add the person again."}
             return {"ok": False, "message": detail if isinstance(detail, str) and detail else f"Aadi Identity refused ({r.status_code})."}
         return {"ok": True, **r.json()}
 
