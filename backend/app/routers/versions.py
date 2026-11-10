@@ -214,6 +214,9 @@ OUTPUT: produce these files and nothing else.
    - "code": a code walk-through: a syntax-highlighted editor where the lines being explained are highlighted as the narrator reaches them, with an optional Output console and Variables table. Nothing is run, so write the real output and values yourself:
        {{"layout": "code", "diagram": {{"language": "python", "code": "x = 5\\nprint(x)", "steps": [{{"lines": [1], "vars": {{"x": "5"}}}}, {{"lines": [2], "output": "5"}}]}}}}
      code: up to 18 lines of up to 80 characters (a short excerpt, not a whole program). steps (up to 12) follow the order in which the narrator explains the code: "lines" are 1-based line numbers, "output" is what is printed at that step, "vars" are the variable values after that step (up to 6). Languages: python, javascript, java, c, cpp, sql, bash, html, json. Write one narrated sentence per step. {code_use}
+   - Real-world media ("photo", "clip", "before_after"): you cannot supply the files, so do NOT use these layouts yourself. Instead, for up to 3 slides where a real photograph, a short clip or a before/after pair would help, add to lesson_plan.json a top-level "media_ideas" list:
+       "media_ideas": [{{"slide": 3, "kind": "photo", "idea": "what the picture should show", "search_terms": ["2 to 4 search words"], "why": "what it helps students notice"}}]
+     The teacher will find the file, check its licence and add it. Suggest only things that are real and age-appropriate.
    Without a layout, the bullets are shown one by one. Keep every label short (1 to 4 words) and in the lesson language. List the items in the order the narrator mentions them.
 
 RULES

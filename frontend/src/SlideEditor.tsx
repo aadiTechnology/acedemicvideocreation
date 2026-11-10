@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { ApiError, Slide } from "./api";
-import { LayoutInfo, Recommendation, SlideDraft, slides } from "./slidesApi";
+import { LayoutInfo, MediaFile, Recommendation, SlideDraft, slides } from "./slidesApi";
+
+const MEDIA_LAYOUTS = ["photo", "clip", "before_after"];
+const SLOTS: Record<string, [string, string][]> = { photo: [["photo", "the photo"]], clip: [["clip", "the clip"]], before_after: [["before", "the Before picture"], ["after", "the After picture"]] };
 
 export default function SlideEditor({ versionId, row, onSaved, onClose }: { versionId: string; row: Slide; onSaved: () => void; onClose: () => void }) {
   const [layouts, setLayouts] = useState<LayoutInfo[]>([]);
@@ -20,6 +23,8 @@ export default function SlideEditor({ versionId, row, onSaved, onClose }: { vers
   const [err, setErr] = useState("");
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
+  const [files, setFiles] = useState<MediaFile[]>([]);
+  const [licences, setLicences] = useState<string[]>([]);
   const last = useRef("");
 
   useEffect(() => {
@@ -38,6 +43,23 @@ export default function SlideEditor({ versionId, row, onSaved, onClose }: { vers
     })();
   }, [versionId, row.slide, row.module]);
 
+  const loadMedia = () => slides.media(versionId).then((r) => { setFiles(r.items); setLicences(r.licences); }).catch(() => undefined);
+  useEffect(() => { if (MEDIA_LAYOUTS.includes(layout)) loadMedia(); }, [versionId, layout]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** Put a file into one slot of the diagram (for example diagram.photo.file), keeping what is already written there. */
+  function useFile(slot: string, file: string) {
+    let d: Record<string, Record<string, unknown>> = {};
+    try { d = diagram.trim() ? JSON.parse(diagram) : {}; } catch { setErr("Fix the diagram JSON first."); return; }
+    const old = d[slot] ?? {};
+    d[slot] = { source: "", licence: licences[0] ?? "CC0", credit: "", ...old, file };
+    setDiagram(JSON.stringify(d, null, 2));
+  }
+  const addFile = (f: File | undefined) => f && run(async () => {
+    const r = await slides.addMedia(versionId, f);
+    await loadMedia();
+    setMsg(`Added ${r.name}. Now choose where to use it, and fill in the source, licence and credit.`);
+    onSaved();
+  });
   const info = layouts.find((l) => l.name === layout);
   function draft(): SlideDraft | null {
     let parsed: unknown = null;
@@ -91,6 +113,17 @@ export default function SlideEditor({ versionId, row, onSaved, onClose }: { vers
           <label>Headline<input value={headline} maxLength={100} onChange={(e) => setHeadline(e.target.value)} /></label>
           <label>Bullets (one per line)<textarea rows={4} value={bullets} onChange={(e) => setBullets(e.target.value)} /></label>
           <label>Key terms for this slide (comma separated, highlighted in captions)<input value={terms} onChange={(e) => setTerms(e.target.value)} /></label>
+          {MEDIA_LAYOUTS.includes(layout) && (
+            <fieldset aria-label="Pictures and clips" style={{ border: "1px solid var(--line)", borderRadius: 8, padding: 10, margin: "8px 0" }}>
+              <legend>Pictures and clips</legend>
+              <p className="muted">Every picture or clip needs its source, an accepted licence ({licences.join(", ") || "loading"}) and a credit, which is shown on the slide. Photos up to 5 MB, clips up to 20 MB and 20 seconds.</p>
+              <label>Add a picture or clip<input type="file" accept=".png,.jpg,.jpeg,.mp4" disabled={busy} onChange={(e) => { addFile(e.target.files?.[0]); e.target.value = ""; }} /></label>
+              {files.length > 0 && <ul>{files.map((f) => (
+                <li key={f.file}><code>{f.file}</code> <span className="muted">{f.kind}, {(f.size / 1048576).toFixed(1)} MB{f.used_by.length ? `, used on slide ${f.used_by.join(", ")}` : ""}</span>{" "}
+                  {(SLOTS[layout] ?? []).filter(() => (f.kind === "clip") === (layout === "clip")).map(([slot, label]) => <button key={slot} className="link" onClick={() => useFile(slot, f.file)}>Use as {label}</button>)}
+                </li>))}</ul>}
+            </fieldset>
+          )}
           <label>Diagram (JSON, only for layouts that need it)<textarea rows={8} spellCheck={false} value={diagram} onChange={(e) => setDiagram(e.target.value)} /></label>
           <div className="row">
             <button className="primary" disabled={busy} onClick={recommend}>Suggest a layout</button>

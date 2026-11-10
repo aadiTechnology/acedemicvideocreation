@@ -171,7 +171,59 @@ def _parse_csv(raw: bytes, issues: list[Issue], assets: set[str]) -> list[dict]:
 
 
 LAYOUTS = ("bullets", "flow", "equation", "cycle", "compare", "illustration",
-           "text_illustration", "timeline", "labelled_diagram", "experiment", "recap", "code")
+           "text_illustration", "timeline", "labelled_diagram", "experiment", "recap", "code", "photo", "clip", "before_after")
+MEDIA_LAYOUTS = ("photo", "clip", "before_after")
+LICENCES = ("CC0", "Public domain", "CC BY", "CC BY-SA", "Own work", "Permission granted")  # same list as the Video Engine
+CLIP_EXTS = (".mp4",)
+MAX_IMAGE_BYTES = 5 * 1024 * 1024
+MAX_CLIP_BYTES = 20 * 1024 * 1024
+
+
+def _media_ref_problem(ref, name: str, exts: tuple) -> str | None:
+    if not isinstance(ref, dict):
+        return f"{name} must be an object with file, source, licence and credit."
+    file = ref.get("file")
+    if not isinstance(file, str) or not file.strip():
+        return f"{name}.file is required, for example \"media/{'clip.mp4' if '.mp4' in exts else 'picture.jpg'}\"."
+    path = PurePosixPath(file)
+    if "\\" in file or path.is_absolute() or ".." in path.parts or path.parts[:1] != ("media",) or len(path.parts) != 2:
+        return f"{name}.file must be \"media/<file name>\" (the file is added to the lesson with Add picture or clip)."
+    if path.suffix.lower() not in exts:
+        return f"{name}.file must be {' or '.join(exts)}."
+    for key, limit in (("source", 300), ("credit", 120)):
+        if not (isinstance(ref.get(key), str) and 0 < len(ref[key].strip()) <= limit):
+            what = "where the file came from (a web address or a book)" if key == "source" else "the name to show on screen (author or owner)"
+            return f"{name}.{key} is required: {what}."
+    if ref.get("licence") not in LICENCES:
+        return f"{name}.licence must be one of: {', '.join(LICENCES)}."
+    for key in ("caption", "label"):
+        if key in ref and not (isinstance(ref[key], str) and len(ref[key]) <= 100):
+            return f"{name}.{key} is text of up to 100 characters."
+    return None
+
+
+def media_refs(item: dict) -> list[dict]:
+    diagram = item.get("diagram") if isinstance(item.get("diagram"), dict) else {}
+    layout = item.get("layout")
+    if layout in ("photo", "clip"):
+        return [diagram.get(layout)]
+    if layout == "before_after":
+        return [diagram.get("before"), diagram.get("after")]
+    return []
+
+
+def _media_problem(layout: str, diagram: dict, item: dict) -> str | None:
+    if layout == "photo":
+        problem = _media_ref_problem(diagram.get("photo"), "photo", IMAGE_EXTS)
+    elif layout == "clip":
+        problem = _media_ref_problem(diagram.get("clip"), "clip", CLIP_EXTS)
+    else:
+        problem = _media_ref_problem(diagram.get("before"), "before", IMAGE_EXTS) or _media_ref_problem(diagram.get("after"), "after", IMAGE_EXTS)
+    if problem:
+        return problem
+    if layout != "before_after" and item.get("bullets") and not _texts(item["bullets"], 1, 4):
+        return f"{layout} takes at most 4 short bullets beside the media."
+    return None
 ILLUSTRATIONS = ("refraction", "photosynthesis", "water_cycle", "leaf_section")
 
 
@@ -228,6 +280,8 @@ def _diagram_problem(item: dict) -> str | None:
             diagram = {}
         else:
             return f"layout {layout} needs a diagram object."
+    if layout in MEDIA_LAYOUTS:
+        return _media_problem(layout, diagram, item)
     if layout == "flow" and not _texts(diagram.get("steps"), 2, 5):
         return "flow needs diagram.steps: 2 to 5 short labels."
     if layout == "equation" and not _texts(diagram.get("terms"), 3, 9):
@@ -367,11 +421,23 @@ def parse_upload(files: list[tuple[str, bytes]], language: str, lesson_defaults:
         if name in ("lesson.csv", "lesson_plan.json", "academic_review.json"):
             continue
         if p.parts[0] == "assets" and p.suffix.lower() in IMAGE_EXTS:
+            if p.parts[1:2] == ("media",) and len(members[name]) > MAX_IMAGE_BYTES:
+                issues.append(_err("media_too_large", f"{name!r} is larger than {MAX_IMAGE_BYTES // 1048576} MB."))
             continue
-        issues.append(_err("unexpected_file", f"Unexpected file {name!r}. Only lesson.csv, lesson_plan.json, academic_review.json and PNG/JPEG images in assets/ are accepted."))
+        if p.parts[:2] == ("assets", "media") and len(p.parts) == 3 and p.suffix.lower() in CLIP_EXTS:
+            if len(members[name]) > MAX_CLIP_BYTES:
+                issues.append(_err("media_too_large", f"{name!r} is larger than {MAX_CLIP_BYTES // 1048576} MB."))
+            continue
+        issues.append(_err("unexpected_file", f"Unexpected file {name!r}. Only lesson.csv, lesson_plan.json, academic_review.json, PNG/JPEG images in assets/ and photos or MP4 clips in assets/media/ are accepted."))
     assets = {n for n in members if n.startswith("assets/")}
     slides = _parse_csv(members["lesson.csv"], issues, assets) if "lesson.csv" in members else []
     plan = _parse_plan(members["lesson_plan.json"], language, issues) if "lesson_plan.json" in members else None
+    if isinstance(plan, dict):  # real-world media named in the plan must be in the package
+        for item in plan.get("slides", []) if isinstance(plan.get("slides"), list) else []:
+            if isinstance(item, dict) and item.get("layout") in MEDIA_LAYOUTS:
+                for ref in media_refs(item):
+                    if isinstance(ref, dict) and isinstance(ref.get("file"), str) and f"assets/{ref['file']}" not in members:
+                        issues.append(_err("media_missing", f"lesson_plan.json: slide {item.get('slide')} uses {ref['file']!r}, which is not in the package (assets/{ref['file']})."))
     if "academic_review.json" in members:
         _parse_plan(members["academic_review.json"], language, issues, "academic_review.json")
     if issues:

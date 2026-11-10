@@ -5,15 +5,18 @@ so an edit can never make a package the engine would reject. Like an import, it 
 
 from __future__ import annotations
 
+import base64
 import csv
 import hashlib
 import io
 import json
+import re
 import zipfile
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import Response
+from starlette.datastructures import UploadFile  # what request.form() returns (not fastapi's subclass)
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -21,7 +24,7 @@ from app import models as m
 from app.auth import CurrentUser, current_user, require_cap
 from app.db import get_db
 from app.engine_client import EngineRejected, EngineUnavailable
-from app.package import CANONICAL_COLUMNS, ImportRejected, _diagram_problem, parse_upload
+from app.package import CANONICAL_COLUMNS, LICENCES, MAX_CLIP_BYTES, MAX_IMAGE_BYTES, ImportRejected, _diagram_problem, media_refs, parse_upload
 from app.routers.structure import owned
 from app.routers.versions import _log, _storage
 from app.routers.video import client_of
@@ -128,6 +131,13 @@ def save_slide(version_id: str, number: int, body: SlideIn, request: Request, db
                              "subtitle_text": texts.get("subtitle_text", s["subtitle_text"]).strip(), "visual_instruction": texts.get("visual_instruction", s["visual_instruction"]).strip()})
             w.writerow([vals[c] for c in cols])
         members["lesson.csv"] = buf.getvalue().encode("utf-8")
+    return _commit_package(db, v, request, user, members, f"Slide {number} was edited." + (" Its text was changed." if text_changed else ""),
+                           {"saved": True, "slide": number}, "The edited slide is not valid.")
+
+
+def _commit_package(db: Session, v: m.LessonVersion, request: Request, user: CurrentUser, members: dict[str, bytes], note: str, extra: dict,
+                    invalid: str = "The change is not valid.") -> dict:
+    """Rebuild the stored package from ``members``, validate it exactly like an import, and store it. Like an import, it cancels a review or approval."""
     blob = io.BytesIO()
     with zipfile.ZipFile(blob, "w", zipfile.ZIP_DEFLATED) as zf:
         for name, data in members.items():
@@ -138,16 +148,87 @@ def save_slide(version_id: str, number: int, body: SlideIn, request: Request, db
     try:
         parsed = parse_upload([("package.zip", blob.getvalue())], v.language, defaults)
     except ImportRejected as exc:
-        raise HTTPException(422, {"message": "The edited slide is not valid.", "issues": [i.dict() for i in exc.issues]}) from exc
+        raise HTTPException(422, {"message": invalid, "issues": [i.dict() for i in exc.issues]}) from exc
     path = _storage(request) / "lesson-versions" / v.id / f"package-{parsed.sha256[:12]}.zip"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(parsed.zip_bytes)
     if v.review_status in ("in_review", "approved", "changes_required", "rejected"):
-        _log(db, v, user, "content_changed", "draft", f"Slide {number} was edited." + (" Its text was changed." if text_changed else ""))
+        _log(db, v, user, "content_changed", "draft", note)
     v.slides, v.lesson_plan, v.package_path, v.package_sha256 = parsed.slides, parsed.lesson_plan, str(path), hashlib.sha256(parsed.zip_bytes).hexdigest()
     v.imported_at, v.imported_by = m.utcnow(), user.user_id
     db.commit()
-    return {"saved": True, "slide": number, "review_status": v.review_status, "package_sha256": v.package_sha256}
+    return {**extra, "review_status": v.review_status, "package_sha256": v.package_sha256}
+
+
+def _package_members(v: m.LessonVersion) -> dict[str, bytes]:
+    if not v.package_path or not Path(v.package_path).is_file():
+        raise HTTPException(409, "This version has no stored package to edit. Import the lesson first.")
+    out: dict[str, bytes] = {}
+    with zipfile.ZipFile(v.package_path) as zf:
+        for info in zf.infolist():
+            if not info.is_dir():
+                out[info.orig_filename] = zf.read(info)
+    return out
+
+
+MEDIA_NAME = re.compile(r"[^a-z0-9._-]+")
+MAGIC = {".png": lambda b: b[:8] == bytes.fromhex("89504e470d0a1a0a"), ".jpg": lambda b: b[:3] == bytes.fromhex("ffd8ff"), ".jpeg": lambda b: b[:3] == bytes.fromhex("ffd8ff"),
+         ".mp4": lambda b: b[4:8] == b"ftyp"}
+
+
+def _media_files(members: dict[str, bytes], plan: dict | None) -> list[dict]:
+    used: dict[str, list[int]] = {}
+    for item in (plan or {}).get("slides", []):
+        for ref in media_refs(item) if isinstance(item, dict) else []:
+            if isinstance(ref, dict) and isinstance(ref.get("file"), str):
+                used.setdefault(ref["file"], []).append(item.get("slide"))
+    return [{"file": n[len("assets/"):], "size": len(b), "kind": "clip" if n.lower().endswith(".mp4") else "image", "used_by": used.get(n[len("assets/"):], [])}
+            for n, b in sorted(members.items()) if n.startswith("assets/media/")]
+
+
+@router.get("/{version_id}/media")
+def list_media(version_id: str, db: Session = Depends(get_db), user: CurrentUser = Depends(current_user)):
+    v = owned(db, m.LessonVersion, version_id, user)
+    return {"items": _media_files(_package_members(v), v.lesson_plan), "licences": list(LICENCES)}
+
+
+@router.post("/{version_id}/media")
+async def add_media(version_id: str, request: Request, db: Session = Depends(get_db), user: CurrentUser = Depends(writer)):
+    """Add a photo (PNG or JPEG, up to 5 MB) or an MP4 clip (up to 20 MB) to the lesson. It is named in a slide's diagram as media/<name>."""
+    v = owned(db, m.LessonVersion, version_id, user)
+    form = await request.form()
+    upload = form.get("file")
+    if not isinstance(upload, UploadFile):
+        raise HTTPException(422, "Choose a photo or an MP4 clip to add.")
+    name = MEDIA_NAME.sub("-", PurePosixPath((upload.filename or "").replace("\\", "/")).name.lower()).strip("-.")
+    ext = PurePosixPath(name).suffix
+    if ext not in MAGIC:
+        raise HTTPException(422, "Add a PNG or JPEG photo, or an MP4 clip.")
+    limit = MAX_CLIP_BYTES if ext == ".mp4" else MAX_IMAGE_BYTES
+    data = await upload.read(limit + 1)
+    if len(data) > limit:
+        raise HTTPException(422, f"That file is larger than {limit // 1048576} MB.")
+    if not MAGIC[ext](data):
+        raise HTTPException(422, f"That file is not a real {ext[1:].upper()} file.")
+    members = _package_members(v)
+    members[f"assets/media/{name}"] = data
+    out = _commit_package(db, v, request, user, members, f"Media file {name} was added.", {"file": f"media/{name}", "name": name, "size": len(data), "kind": "clip" if ext == ".mp4" else "image"})
+    return out
+
+
+def _preview_media(v: m.LessonVersion, entry: dict) -> dict[str, str]:
+    """The photos a slide uses, so the preview shows them (clips are not previewed: they play in the finished video)."""
+    refs = [r.get("file") for r in media_refs(entry) if isinstance(r, dict) and isinstance(r.get("file"), str) and not r["file"].lower().endswith(".mp4")]
+    if not refs or not v.package_path or not Path(v.package_path).is_file():
+        return {}
+    out: dict[str, str] = {}
+    with zipfile.ZipFile(v.package_path) as zf:
+        for f in refs[:2]:
+            try:
+                out[f] = base64.b64encode(zf.read(f"assets/{f}")).decode("ascii")
+            except KeyError:
+                pass
+    return out
 
 
 @router.post("/{version_id}/slides/{number}/preview")
@@ -164,6 +245,7 @@ def preview_slide(version_id: str, number: int, body: PreviewIn, request: Reques
                "slide": {"Slide": number, "Module": body.module or row["module"], "voice_text": body.voice_text or row["voice_text"],
                          "subtitle_text": body.subtitle_text or row["subtitle_text"]},
                "plan": entry, "key_terms": (v.lesson_plan or {}).get("key_terms", []), "at": body.at, "profile": body.profile, "subtitles": body.subtitles}
+    payload["media"] = _preview_media(v, entry)
     png = _engine_call(lambda: client_of(request).preview(payload))
     return Response(png, media_type="image/png", headers={"Cache-Control": "no-store"})
 

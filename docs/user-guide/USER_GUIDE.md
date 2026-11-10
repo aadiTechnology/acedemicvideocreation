@@ -252,3 +252,16 @@ The **People and roles** tab (for people with permission to see it) manages who 
 - **Activity** lists every change with who made it.
 - People who had roles before this change were moved across with the equal role (several roles became a combined role), so nobody lost or gained access.
 - The older `/api/admin/users` endpoints are replaced by `/api/org/...`.
+
+## 15. Real photos and clips
+
+Use a real photograph, a short clip or a before/after pair when a picture of the real thing teaches better than a drawing. You find the file and check its licence; the app records where it came from and shows the credit on the slide.
+
+1. Open **Edit slide** and choose the layout **Real photo**, **Short video clip** or **Before and after**.
+2. Under **Pictures and clips**, choose **Add a picture or clip**. Photos are PNG or JPEG up to 5 MB; clips are MP4 up to 20 MB and 20 seconds. The file is added to the lesson.
+3. Press **Use as the photo** (or the clip, or the Before and After pictures). The diagram now names the file.
+4. Fill in, for each file: **source** (the web address or book), **licence** (CC0, Public domain, CC BY, CC BY-SA, Own work or Permission granted) and **credit** (the name shown on screen). A slide without all three cannot be saved.
+5. **Preview** shows photos as they will look. A clip plays only in the finished video.
+6. The video shows `Photo: <credit>, <licence>` under the picture. The quality report lists every credit (**media_credits**) and reminds the reviewer to confirm each licence: that check is a person's job, not the app's.
+
+Adding a file to an approved version sends it back to draft, like any other change. The ChatGPT prompt does not make media: it adds a `media_ideas` list (what to look for and search words) to `lesson_plan.json` for you to follow up.
