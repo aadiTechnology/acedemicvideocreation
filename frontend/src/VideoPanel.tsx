@@ -21,6 +21,7 @@ export default function VideoPanel({ versionId, approved, me }: { versionId: str
   const [style, setStyle] = useState("animated");
   const [speed, setSpeed] = useState("normal");
   const [audio, setAudio] = useState<File | null>(null);
+  const [again, setAgain] = useState({ profile: "720p24", theme: "dark", subtitles: true });
   const can = me.roles.includes("admin") || me.roles.includes("production_operator");
 
   const load = useCallback(async () => {
@@ -120,6 +121,26 @@ export default function VideoPanel({ versionId, approved, me }: { versionId: str
                 <span className="muted">{a.kind === "video" ? `${a.width}x${a.height}, ${a.fps} fps, ${Math.round(a.duration_seconds ?? 0)} s, ` : ""}{a.kind === "lesson_bundle" ? "to make this video again in another size or theme, " : ""}{mb(a.size_bytes)}</span></li>))}
             </ul>
             {(s?.assets ?? []).some((a) => a.kind === "quality_report") && <QualityPanel jobId={job.id} />}
+            {(s?.assets ?? []).some((a) => a.kind === "lesson_bundle") && can && (
+              <fieldset aria-label="Make this video again" style={{ border: "1px solid var(--line)", borderRadius: 8, padding: 10, margin: "10px 0" }}>
+                <legend>Make this video again</legend>
+                <p className="muted">In another size or theme. The narration is reused exactly, so nothing is spoken again and no voice service is needed.</p>
+                <div className="row">
+                  <label>Size
+                    <select value={again.profile} onChange={(e) => setAgain({ ...again, profile: e.target.value })}>
+                      <option value="480p24">480p (small, quick)</option><option value="720p24">720p</option><option value="1080p24">1080p (largest)</option>
+                    </select>
+                  </label>
+                  <label>Theme
+                    <select value={again.theme} onChange={(e) => setAgain({ ...again, theme: e.target.value })}>
+                      <option value="dark">Dark (as made)</option><option value="high_contrast">High contrast (black ground, brighter text)</option>
+                    </select>
+                  </label>
+                  <label style={{ display: "inline-flex", gap: 6, alignItems: "center" }}><input type="checkbox" style={{ minWidth: 0 }} checked={again.subtitles} onChange={(e) => setAgain({ ...again, subtitles: e.target.checked })} />Captions</label>
+                  <button className="primary" disabled={busy} onClick={() => run(() => video.remake(job.id, again))}>Make it again</button>
+                </div>
+              </fieldset>
+            )}
           </>}
         </div>
       )}

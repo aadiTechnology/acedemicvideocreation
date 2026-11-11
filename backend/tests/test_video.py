@@ -73,7 +73,7 @@ def test_full_flow_submit_progress_copy_and_download(client, engine):
     assert r.status_code == 202 and r.json()["job"]["state"] == "queued" and r.json()["idempotent_replay"] is False
     jid = engine.only_job()
     m = engine.jobs[jid]["manifest"]
-    assert (m["contract_version"], m["caller"]["application_id"], m["caller"]["external_ref"], m["language"]) == ("1.2", "aadi-academic", vid, "en-IN")
+    assert (m["contract_version"], m["caller"]["application_id"], m["caller"]["external_ref"], m["language"]) == ("1.3", "aadi-academic", vid, "en-IN")
     assert (m["caller"]["tenant_ref"], m["render"]["profile"], m["render"]["subtitles"]["enabled"]) == ("dev-tenant", "720p24", False)
     assert m["render"]["style"] == "animated"  # the default
     assert zipfile.ZipFile(io.BytesIO(engine.jobs[jid]["package"])).read("lesson.csv") == CSV  # the stored package, byte for byte

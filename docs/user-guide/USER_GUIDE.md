@@ -279,3 +279,13 @@ Each lesson version can have 3 to 5 practice questions that check what the learn
 7. **Download practice page (HTML)** gives one file with the approved questions and the same instant feedback. It works offline, loads nothing from the internet, and can be put on a school site or sent by email.
 
 Learners and other viewers see approved questions only and never the answers before they answer. Questions are per language version.
+
+## 17. Make a video again in another size or theme
+
+Every finished animated video keeps a **lesson bundle** (`lesson_bundle.zip`, listed under the video). With it you can make the video again without anyone speaking the lesson again.
+
+1. Open a finished video of an approved version, under **5. Make the video**.
+2. In **Make this video again**, choose the **size** (480p, 720p or 1080p), the **theme** (Dark, as made, or High contrast: black ground and brighter text, easier to read in a bright room or on a projector) and whether to show **captions**.
+3. Press **Make it again**. It is a new video, listed as the latest; the earlier one stays in the history.
+
+The narration is reused exactly, so the new video is as long as the first and no voice service is used. It needs the same permission as making a video, and only one video can be made for a version at a time. A video made before bundles existed has no **Make this video again** box: make a new video instead. The bundle is kept with the video; to keep a lesson re-renderable for longer than the engine keeps its files (14 days), download it.

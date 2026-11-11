@@ -41,6 +41,15 @@ FRIENDLY = {
 }
 
 
+THEMES = ("dark", "high_contrast")
+
+
+class RemakeIn(BaseModel):
+    profile: str = "720p24"
+    theme: str = "dark"
+    subtitles: bool = True
+
+
 class GenerateIn(BaseModel):
     provider: str = "azure"
     mode: str | None = None
@@ -98,7 +107,7 @@ def _manifest(version: m.LessonVersion, user: CurrentUser, key: str, s: dict, ta
         "caller": {"application_id": APPLICATION_ID, "tenant_ref": user.tenant_id, "external_ref": version.id},
         "idempotency_key": key, "language": version.language,
         "tts": {"provider": s["provider"], "mode": s["mode"], "rate": SPEEDS.get(s.get("speed", "normal"), "0%"), **({"voice": s["voice"]} if s.get("voice") else {})},
-        "render": {"profile": s["profile"], "style": s.get("style", "plain"), "subtitles": {"enabled": s["subtitles"]}},
+        "render": {"profile": s["profile"], "style": s.get("style", "plain"), "subtitles": {"enabled": s["subtitles"]}, **({"theme": s["theme"]} if s.get("theme", "dark") != "dark" else {})},
         **({"quality": {"target_minutes": float(target_minutes)}} if target_minutes else {}),  # the quality check compares the video with the planned length
     }
 
@@ -109,10 +118,24 @@ def _fail(job: m.VideoJob, code: str, message: str | None = None, retryable: boo
     job.finished_at = m.utcnow()
 
 
+def _bundle_bytes(db: Session, request: Request, source_job_id: str) -> bytes:
+    """The lesson bundle of a finished video, from Academic's storage (local folder or object storage)."""
+    asset = db.scalar(select(m.VideoAsset).where(m.VideoAsset.job_id == source_job_id, m.VideoAsset.kind == "lesson_bundle"))
+    if asset is None:
+        raise OSError("The lesson bundle of that video is not available.")
+    if is_remote(asset.local_path):
+        store = request.app.state.store
+        raw = store.read_bytes(key_of(asset.local_path)) if store is not None else None
+        if raw is None:
+            raise OSError("The lesson bundle of that video is not available.")
+        return raw
+    return Path(asset.local_path).read_bytes()
+
+
 def _send(db: Session, request: Request, job: m.VideoJob, version: m.LessonVersion, user: CurrentUser) -> None:
     """Submit to the engine. The engine de-duplicates on the idempotency key, so repeating this is safe."""
     try:
-        package = Path(version.package_path).read_bytes()
+        package = _bundle_bytes(db, request, job.settings["from_job"]) if job.settings.get("from_job") else Path(version.package_path).read_bytes()
         target = (db.get(m.Lesson, version.lesson_id).expected_duration_minutes if version.lesson_id else None)
         resp = client_of(request).submit(_manifest(version, user, job.idempotency_key, job.settings, target), package, job.idempotency_key, cid_of(request))
         job.engine_job_id, job.state = resp["job_id"], resp["state"]
@@ -254,6 +277,36 @@ def generate(version_id: str, body: GenerateIn, request: Request, db: Session = 
         return {**_summary(db, version), "idempotent_replay": True}
     _send(db, request, job, version, user)
     return {**_summary(db, version), "idempotent_replay": False}
+
+
+@router.post("/video-jobs/{job_id}/remake", status_code=202)
+def remake(job_id: str, body: RemakeIn, request: Request, db: Session = Depends(get_db), user: CurrentUser = Depends(operator)):
+    """Make a finished video again in another size or theme from its lesson bundle. The narration is reused: nothing is spoken again."""
+    source = _get_job(db, job_id, user)
+    version = db.get(m.LessonVersion, source.version_id)
+    if source.state != "succeeded":
+        raise HTTPException(409, "Only a finished video can be made again.")
+    if version.review_status != "approved":
+        raise HTTPException(409, "Only approved content can be sent to video production.")
+    if body.profile not in PROFILES:
+        raise HTTPException(422, f"Unknown output profile. Use one of: {', '.join(PROFILES)}.")
+    if body.theme not in THEMES:
+        raise HTTPException(422, f"Unknown theme. Use one of: {', '.join(THEMES)}.")
+    if not db.scalar(select(m.VideoAsset).where(m.VideoAsset.job_id == source.id, m.VideoAsset.kind == "lesson_bundle")):
+        raise HTTPException(409, "This video has no lesson bundle (videos made before bundles existed cannot be made again). Make a new video instead.")
+    if any(j.state in m.ACTIVE_JOB_STATES for j in db.scalars(select(m.VideoJob).where(m.VideoJob.version_id == version.id))):
+        raise HTTPException(409, "A video is already being made for this version.")
+    settings = {**{k: v for k, v in (source.settings or {}).items() if k != "from_job"}, "profile": body.profile, "theme": body.theme, "subtitles": body.subtitles,
+                "style": "animated", "from_job": source.id}
+    base = hashlib.sha256(json.dumps([source.id, settings], sort_keys=True).encode()).hexdigest()
+    runs = db.scalar(select(func.count()).select_from(m.VideoJob).where(m.VideoJob.version_id == version.id, m.VideoJob.idempotency_key.like(f"lv-remake-{base[:20]}-%"))) or 0
+    job = m.VideoJob(tenant_id=user.tenant_id, version_id=version.id, idempotency_key=f"lv-remake-{base[:20]}-{runs}", package_sha256=source.package_sha256,
+                     settings=settings, state="submitting", created_by=user.user_id)
+    db.add(job)
+    db.commit()
+    _send(db, request, job, version, user)
+    db.commit()
+    return _summary(db, version)
 
 
 @router.post("/video-jobs/{job_id}/retry")

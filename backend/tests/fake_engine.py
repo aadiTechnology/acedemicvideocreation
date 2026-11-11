@@ -30,6 +30,7 @@ class FakeEngine:
         self.jobs: dict[str, dict] = {}
         self.by_key: dict[str, str] = {}
         self.submits = 0
+        self.bundle: bytes | None = None  # when set, finished jobs also list a lesson_bundle asset with this content
         self.report: dict | None = None  # when set, finished jobs also list a quality_report asset with this content
         self.previews: list[dict] = []
         self.recommends: list[dict] = []
@@ -133,10 +134,12 @@ class FakeEngine:
                  "sha256": hashlib.sha256(self.VIDEO).hexdigest(), "duration_seconds": 12.5, "width": 1920, "height": 1080, "fps": 24},
                 {"asset_id": "a-cfg", "kind": "render_config", "filename": "render_config.json", "content_type": "application/json",
                  "size_bytes": 2, "sha256": hashlib.sha256(b"{}").hexdigest()},
+                *([{"asset_id": "a-bundle", "kind": "lesson_bundle", "filename": "lesson_bundle.zip", "content_type": "application/zip",
+                    "size_bytes": len(self.bundle), "sha256": hashlib.sha256(self.bundle).hexdigest()}] if self.bundle else []),
                 *([{"asset_id": "a-qr", "kind": "quality_report", "filename": "quality_report.json", "content_type": "application/json",
                     "size_bytes": len(self._report_bytes()), "sha256": hashlib.sha256(self._report_bytes()).hexdigest()}] if self.report else [])]})
         if rest[0] == "assets" and rest[-1] == "content":
-            body = self.VIDEO if rest[1] == "a-video" else self._report_bytes() if rest[1] == "a-qr" else b"{}"
+            body = self.VIDEO if rest[1] == "a-video" else self._report_bytes() if rest[1] == "a-qr" else self.bundle if rest[1] == "a-bundle" else b"{}"
             if self.corrupt_download and rest[1] == "a-video":
                 body = body[:-1] + b"X"
             return httpx.Response(200, content=body)

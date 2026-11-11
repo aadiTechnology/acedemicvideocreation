@@ -94,6 +94,7 @@ export const video = {
   generate: (versionId: string, body: { provider: string; profile: string; subtitles: boolean; style: string; speed?: string; rerender?: boolean }) =>
     call<VideoSummary>("POST", `/lesson-versions/${versionId}/video`, body),
   retry: (jobId: string) => call<VideoSummary>("POST", `/video-jobs/${jobId}/retry`, {}),
+  remake: (jobId: string, body: { profile: string; theme: string; subtitles: boolean }) => call<VideoSummary>("POST", `/video-jobs/${jobId}/remake`, body),
   cancel: (jobId: string) => call<VideoSummary>("POST", `/video-jobs/${jobId}/cancel`, {}),
   async uploadAudio(jobId: string, file: File): Promise<VideoSummary> {
     const form = new FormData();
