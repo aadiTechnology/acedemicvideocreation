@@ -36,14 +36,17 @@ class EngineClient:
     def configured(self) -> bool:
         return bool(self.s.video_engine_url and self.s.video_engine_api_key)
 
-    def _headers(self, correlation_id: str | None) -> dict:
-        return {"X-Engine-Key": self.s.video_engine_api_key, "X-Correlation-Id": correlation_id or uuid.uuid4().hex}
+    def _headers(self, correlation_id: str | None, tenant: str | None = None) -> dict:
+        h = {"X-Engine-Key": self.s.video_engine_api_key, "X-Correlation-Id": correlation_id or uuid.uuid4().hex}
+        if tenant:  # who is asking: the engine only shows this tenant's jobs (isolation, engine contract 1.3+)
+            h["X-Caller-App"], h["X-Tenant-Id"] = APPLICATION_ID, tenant
+        return h
 
-    def _request(self, method: str, path: str, correlation_id: str | None = None, **kw) -> httpx.Response:
+    def _request(self, method: str, path: str, correlation_id: str | None = None, tenant: str | None = None, **kw) -> httpx.Response:
         if not self.configured:
             raise EngineUnavailable("The Video Engine is not configured.")
         try:
-            resp = self.http.request(method, path, headers={**self._headers(correlation_id), **kw.pop("headers", {})}, **kw)
+            resp = self.http.request(method, path, headers={**self._headers(correlation_id, tenant), **kw.pop("headers", {})}, **kw)
         except httpx.HTTPError as exc:  # timeouts, refused connections, DNS
             raise EngineUnavailable("The Video Engine could not be reached.") from exc
         if resp.status_code >= 500:
@@ -60,28 +63,28 @@ class EngineClient:
     def capabilities(self, cid: str | None = None) -> dict:
         return self._request("GET", "/api/v1/capabilities", cid).json()
 
-    def submit(self, manifest: dict, package: bytes, idempotency_key: str, cid: str | None = None) -> dict:
-        resp = self._request("POST", "/api/v1/video-jobs", cid, headers={"Idempotency-Key": idempotency_key},
+    def submit(self, manifest: dict, package: bytes, idempotency_key: str, cid: str | None = None, tenant: str | None = None) -> dict:
+        resp = self._request("POST", "/api/v1/video-jobs", cid, tenant, headers={"Idempotency-Key": idempotency_key},
                              data={"manifest": json.dumps(manifest)}, files={"package": ("package.zip", package, "application/zip")})
         return resp.json()
 
-    def status(self, job_id: str, cid: str | None = None) -> dict:
-        return self._request("GET", f"/api/v1/video-jobs/{job_id}", cid).json()
+    def status(self, job_id: str, cid: str | None = None, tenant: str | None = None) -> dict:
+        return self._request("GET", f"/api/v1/video-jobs/{job_id}", cid, tenant).json()
 
-    def retry(self, job_id: str, cid: str | None = None) -> dict:
-        return self._request("POST", f"/api/v1/video-jobs/{job_id}/retry", cid).json()
+    def retry(self, job_id: str, cid: str | None = None, tenant: str | None = None) -> dict:
+        return self._request("POST", f"/api/v1/video-jobs/{job_id}/retry", cid, tenant).json()
 
-    def cancel(self, job_id: str, cid: str | None = None) -> dict:
-        return self._request("POST", f"/api/v1/video-jobs/{job_id}/cancel", cid).json()
+    def cancel(self, job_id: str, cid: str | None = None, tenant: str | None = None) -> dict:
+        return self._request("POST", f"/api/v1/video-jobs/{job_id}/cancel", cid, tenant).json()
 
-    def assets(self, job_id: str, cid: str | None = None) -> list[dict]:
-        return self._request("GET", f"/api/v1/video-jobs/{job_id}/assets", cid).json()["assets"]
+    def assets(self, job_id: str, cid: str | None = None, tenant: str | None = None) -> list[dict]:
+        return self._request("GET", f"/api/v1/video-jobs/{job_id}/assets", cid, tenant).json()["assets"]
 
-    def narration_batch(self, job_id: str, cid: str | None = None) -> dict:
-        return self._request("GET", f"/api/v1/video-jobs/{job_id}/narration-batch", cid).json()
+    def narration_batch(self, job_id: str, cid: str | None = None, tenant: str | None = None) -> dict:
+        return self._request("GET", f"/api/v1/video-jobs/{job_id}/narration-batch", cid, tenant).json()
 
-    def upload_audio(self, job_id: str, data: bytes, cid: str | None = None) -> dict:
-        return self._request("POST", f"/api/v1/video-jobs/{job_id}/audio", cid, files={"audio": ("audio.zip", data, "application/zip")}).json()
+    def upload_audio(self, job_id: str, data: bytes, cid: str | None = None, tenant: str | None = None) -> dict:
+        return self._request("POST", f"/api/v1/video-jobs/{job_id}/audio", cid, tenant, files={"audio": ("audio.zip", data, "application/zip")}).json()
 
     def preview(self, payload: dict, cid: str | None = None) -> bytes:
         return self._request("POST", "/api/v1/previews", cid, json=payload).content
@@ -92,13 +95,13 @@ class EngineClient:
     def recommend(self, payload: dict, cid: str | None = None) -> dict:
         return self._request("POST", "/api/v1/layouts/recommend", cid, json=payload).json()
 
-    def download_asset(self, job_id: str, asset_id: str, target: Path, cid: str | None = None) -> None:
+    def download_asset(self, job_id: str, asset_id: str, target: Path, cid: str | None = None, tenant: str | None = None) -> None:
         """Stream an asset to ``target`` (a temporary file is renamed on success)."""
         if not self.configured:
             raise EngineUnavailable("The Video Engine is not configured.")
         tmp = target.with_suffix(target.suffix + ".part")
         try:
-            with self.http.stream("GET", f"/api/v1/video-jobs/{job_id}/assets/{asset_id}/content", headers=self._headers(cid)) as resp:
+            with self.http.stream("GET", f"/api/v1/video-jobs/{job_id}/assets/{asset_id}/content", headers=self._headers(cid, tenant)) as resp:
                 if resp.status_code >= 400:
                     raise EngineUnavailable("The video file could not be fetched from the Video Engine.")
                 with tmp.open("wb") as out:

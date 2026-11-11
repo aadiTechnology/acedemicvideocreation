@@ -78,6 +78,9 @@ def test_full_flow_submit_progress_copy_and_download(client, engine):
     assert m["render"]["style"] == "animated"  # the default
     assert zipfile.ZipFile(io.BytesIO(engine.jobs[jid]["package"])).read("lesson.csv") == CSV  # the stored package, byte for byte
     assert all(h.get("x-engine-key") == FakeEngine.KEY and h.get("x-correlation-id") for h in engine.seen_headers)
+    # every call about a job names the caller and the tenant, so the engine can keep tenants apart
+    job_calls = [h for h in engine.seen_headers if "x-tenant-id" in h]
+    assert job_calls and all(h["x-caller-app"] == "aadi-academic" and h["x-tenant-id"] == "dev-tenant" for h in job_calls)
 
     engine.set(jid, "rendering", 60)
     s = client.get(f"/api/lesson-versions/{vid}/video").json()

@@ -137,7 +137,7 @@ def _send(db: Session, request: Request, job: m.VideoJob, version: m.LessonVersi
     try:
         package = _bundle_bytes(db, request, job.settings["from_job"]) if job.settings.get("from_job") else Path(version.package_path).read_bytes()
         target = (db.get(m.Lesson, version.lesson_id).expected_duration_minutes if version.lesson_id else None)
-        resp = client_of(request).submit(_manifest(version, user, job.idempotency_key, job.settings, target), package, job.idempotency_key, cid_of(request))
+        resp = client_of(request).submit(_manifest(version, user, job.idempotency_key, job.settings, target), package, job.idempotency_key, cid_of(request), job.tenant_id)
         job.engine_job_id, job.state = resp["job_id"], resp["state"]
         job.error_code = job.error_message = None
         job.retryable, job.finished_at = False, None
@@ -155,14 +155,14 @@ def _collect_assets(db: Session, request: Request, job: m.VideoJob) -> None:
     client = client_of(request)
     folder = _storage(request) / "videos" / job.version_id / job.id
     folder.mkdir(parents=True, exist_ok=True)
-    listed = client.assets(job.engine_job_id, cid_of(request))
+    listed = client.assets(job.engine_job_id, cid_of(request), job.tenant_id)
     if not any(a["kind"] == "video" for a in listed):
         _fail(job, "render_failed", "The video service finished without a video file.", retryable=False)
         return
     db.execute(delete(m.VideoAsset).where(m.VideoAsset.job_id == job.id))  # a retry collects from scratch
     for a in listed:
         target = folder / f"{a['kind']}-{a['filename']}"
-        client.download_asset(job.engine_job_id, a["asset_id"], target, cid_of(request))
+        client.download_asset(job.engine_job_id, a["asset_id"], target, cid_of(request), job.tenant_id)
         digest = hashlib.sha256(target.read_bytes()).hexdigest()
         if digest != a["sha256"] or target.stat().st_size != a["size_bytes"]:
             target.unlink(missing_ok=True)
@@ -193,7 +193,7 @@ def _refresh(db: Session, request: Request, job: m.VideoJob) -> None:
     if job.state not in m.ACTIVE_JOB_STATES or not job.engine_job_id:
         return
     try:
-        st = client_of(request).status(job.engine_job_id, cid_of(request))
+        st = client_of(request).status(job.engine_job_id, cid_of(request), job.tenant_id)
         job.stage, job.percent = st["progress"].get("stage"), st["progress"].get("percent", 0)
         if st["state"] == "succeeded":
             db.execute(m.VideoAsset.__table__.delete().where(m.VideoAsset.job_id == job.id))
@@ -323,7 +323,7 @@ def retry(job_id: str, request: Request, db: Session = Depends(get_db), user: Cu
         _send(db, request, job, version, user)
     else:
         try:
-            st = client_of(request).retry(job.engine_job_id, cid_of(request))
+            st = client_of(request).retry(job.engine_job_id, cid_of(request), job.tenant_id)
             job.state, job.error_code, job.error_message, job.retryable, job.finished_at = st["state"], None, None, False, None
             db.commit()
         except EngineUnavailable:
@@ -343,7 +343,7 @@ def cancel(job_id: str, request: Request, db: Session = Depends(get_db), user: C
         job.state, job.finished_at = "cancelled", m.utcnow()
     else:
         try:
-            st = client_of(request).cancel(job.engine_job_id, cid_of(request))
+            st = client_of(request).cancel(job.engine_job_id, cid_of(request), job.tenant_id)
         except EngineUnavailable:
             raise HTTPException(503, FRIENDLY["engine_unavailable"]) from None
         except EngineRejected as exc:
@@ -360,7 +360,7 @@ def narration_batch(job_id: str, request: Request, db: Session = Depends(get_db)
     if not job.engine_job_id:
         raise HTTPException(409, "This video has not reached the video service.")
     try:
-        return client_of(request).narration_batch(job.engine_job_id, cid_of(request))
+        return client_of(request).narration_batch(job.engine_job_id, cid_of(request), job.tenant_id)
     except EngineUnavailable:
         raise HTTPException(503, FRIENDLY["engine_unavailable"]) from None
     except EngineRejected as exc:
@@ -380,7 +380,7 @@ async def upload_audio(job_id: str, request: Request, db: Session = Depends(get_
     if len(data) > MAX_AUDIO_BYTES:
         raise HTTPException(413, "The audio file is too large.")
     try:
-        st = client_of(request).upload_audio(job.engine_job_id, data, cid_of(request))
+        st = client_of(request).upload_audio(job.engine_job_id, data, cid_of(request), job.tenant_id)
     except EngineUnavailable:
         raise HTTPException(503, FRIENDLY["engine_unavailable"]) from None
     except EngineRejected as exc:
