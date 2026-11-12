@@ -177,23 +177,45 @@ function LessonsTab({ s, me }: { s: ReturnType<typeof useStructure>; me: Me }) {
   );
 }
 
+const NAV: { key: Tab; label: string; icon: string }[] = [
+  { key: "lessons", label: "Lessons", icon: "\u25A3" },
+  { key: "structure", label: "Structure", icon: "\u2637" },
+  { key: "people", label: "People and roles", icon: "\u263B" },
+];
+
 export default function App() {
   const [tab, setTab] = useState<Tab>("lessons");
   const s = useStructure();
   const [me, setMe] = useState<Me>({ user_id: "", email: "", name: "", roles: [], caps: [] });
   useEffect(() => { versions.me().then(setMe); }, []);
+  useEffect(() => { document.body.classList.remove("nav-open"); }, [tab]);
+  const canSeePeople = (me.caps ?? []).includes("org.users.view");
+  const signedInWithIdentity = Boolean(me.hub_url); // in local development there is no Identity session to end
+  const role = me.roles.length ? me.roles.map(statusText).join(", ") : "";
   return (
-    <>
-      <header>
-        <h1>Aadi Academic Video Creation</h1>
-        <nav>
-          <button className={tab === "lessons" ? "on" : ""} onClick={() => setTab("lessons")}>Lessons</button>
-          <button className={tab === "structure" ? "on" : ""} onClick={() => setTab("structure")}>Structure</button>
-          {(me.caps ?? []).includes("org.users.view") && <button className={tab === "people" ? "on" : ""} onClick={() => setTab("people")}>People and roles</button>}
+    <div className="app">
+      <a className="skip" href="#main">Skip to content</a>
+      <aside className="sb" aria-label="Primary">
+        <div className="brand"><div className="logo">A</div><div><b>Aadi Academic Video Creation</b><small>Lessons to narrated videos</small></div></div>
+        <nav aria-label="Main navigation">
+          {NAV.filter((n) => n.key !== "people" || canSeePeople).map((n) => (
+            <button key={n.key} className={`nav ${tab === n.key ? "active" : ""}`} aria-current={tab === n.key ? "page" : undefined} onClick={() => setTab(n.key)}>
+              <span className="ic" aria-hidden="true">{n.icon}</span>{n.label}
+            </button>
+          ))}
         </nav>
-        {me.hub_url && <a className="switch" href={me.hub_url} style={{ marginLeft: "auto", fontSize: 14 }}>Switch product</a>}
-      </header>
-      <main>{tab === "lessons" ? <LessonsTab s={s} me={me} /> : tab === "structure" ? <StructureTab s={s} /> : <OrgAdmin base="/api" title="People and roles" />}</main>
-    </>
+        <div className="sbfoot">The menu lists only what your role can open.</div>
+      </aside>
+      <div className="mainCol">
+        <header className="top">
+          <button className="menu-btn" aria-label="Open menu" onClick={() => document.body.classList.toggle("nav-open")}>{"\u2630"} Menu</button>
+          <span className="spacer" />
+          <div className="who"><b>{me.name || me.email}</b>{role}</div>
+          {me.hub_url && <a className="btn" href={me.hub_url} data-testid="switch-product">Switch product</a>}
+          {signedInWithIdentity && <a className="btn" href="/auth/logout" data-testid="signout">Sign out</a>}
+        </header>
+        <main id="main" tabIndex={-1}>{tab === "lessons" ? <LessonsTab s={s} me={me} /> : tab === "structure" ? <StructureTab s={s} /> : <OrgAdmin base="/api" title="People and roles" />}</main>
+      </div>
+    </div>
   );
 }
