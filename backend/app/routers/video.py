@@ -35,6 +35,7 @@ FRIENDLY = {
     "unsupported_environment": "The video service cannot render this language yet.",
     "tts_unavailable": "The voice service is not available. Try again, or choose another voice option.",
     "storage_unavailable": "The file storage is not reachable right now. Try again in a minute.",
+    "quota_exceeded": "Your school already has many videos being made. Wait for some to finish, then try again.",
     "render_failed": "The video could not be rendered. Try again.",
     "worker_interrupted": "The video service restarted while rendering. Try again.",
     "asset_corrupt": "The finished video did not pass the integrity check. Try again.",
@@ -144,7 +145,10 @@ def _send(db: Session, request: Request, job: m.VideoJob, version: m.LessonVersi
     except EngineUnavailable:
         _fail(job, "engine_unavailable", retryable=True)
     except EngineRejected as exc:
-        _fail(job, exc.code, f"{FRIENDLY.get(exc.code, exc.message)}" + (f" ({'; '.join(map(str, exc.details[:3]))})" if exc.details else ""), retryable=False)
+        if exc.code == "quota_exceeded":  # the engine's per-school limit: nothing is wrong, the teacher can simply try again later
+            _fail(job, exc.code, FRIENDLY["quota_exceeded"], retryable=True)
+        else:
+            _fail(job, exc.code, f"{FRIENDLY.get(exc.code, exc.message)}" + (f" ({'; '.join(map(str, exc.details[:3]))})" if exc.details else ""), retryable=False)
     except OSError:
         _fail(job, "package_missing", "The stored lesson package could not be read.", retryable=False)
     db.commit()

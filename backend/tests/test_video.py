@@ -260,3 +260,14 @@ def test_narration_speed_maps_to_the_engine_rate(engine, client):
     assert r.status_code in (200, 201, 202), r.text
     sent = [j for j in engine.jobs.values()][0]["manifest"]
     assert sent["tts"]["rate"] == "-15%"
+
+
+def test_the_engines_school_limit_shows_a_plain_message_and_can_be_retried(client, engine):
+    vid = approved_version(client)
+    engine.reject = (429, "quota_exceeded", "This tenant already has 20 unfinished videos (limit 20).")
+    r = gen(client, vid)
+    assert r.status_code in (200, 201, 202)
+    job = client.get(f"/api/lesson-versions/{vid}/video").json()["job"]
+    assert job["state"] == "failed" and job["error_code"] == "quota_exceeded"
+    assert "many videos" in job["error_message"] and "limit 20" not in job["error_message"]
+    assert job["retryable"] is True
