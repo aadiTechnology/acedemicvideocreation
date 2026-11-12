@@ -9,6 +9,9 @@ services:
       dockerfile: Dockerfile
     environment:
       - APP_ENV=production
+      - APP_MAINTENANCE=${APP_MAINTENANCE:-}
+      - APP_MAINTENANCE_ID=${APP_MAINTENANCE_ID:-}
+      - APP_MAINTENANCE_CONFIRM=${APP_MAINTENANCE_CONFIRM:-}
       - APP_BASE_URL=${APP_BASE_URL:-https://academics.aaditechnology.com}
       - AUTH_MODE=oidc
       - DATABASE_URL=${DATABASE_URL}

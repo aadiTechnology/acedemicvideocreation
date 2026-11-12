@@ -10,6 +10,7 @@ reads the older X-Dev-Roles header (default: all roles) so tests can act as any 
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass, field
 
 from fastapi import Depends, HTTPException, Request
@@ -46,7 +47,7 @@ def principal(request: Request) -> Principal:
     if settings.auth_mode == "dev":
         h = request.headers
         uid = h.get("x-dev-user", "dev-user")
-        return Principal(user_id=uid, tenant_id=h.get("x-dev-tenant", "dev-tenant"), email=h.get("x-dev-email", "dev@example.test" if uid == "dev-user" else f"{uid}@example.test"),
+        return Principal(user_id=uid, tenant_id=h.get("x-dev-tenant", os.environ.get("DEV_TENANT_ID", "dev-tenant")), email=h.get("x-dev-email", "dev@example.test" if uid == "dev-user" else f"{uid}@example.test"),
                          name="Developer", identity_id=uid)
     from app.oidc import read_session
     session = read_session(request)

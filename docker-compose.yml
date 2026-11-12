@@ -1,0 +1,19 @@
+# Local development: PostgreSQL on localhost:15441 (credentials are for development only).
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: academic-dev-pg
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "15441:5432"
+    volumes:
+      - academic_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      retries: 20
+volumes:
+  academic_pgdata:

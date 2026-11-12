@@ -1,0 +1,100 @@
+{
+  "title": "Refraction of light",
+  "language": "en-IN",
+  "learning_objectives": [
+    "Define refraction",
+    "Identify rarer and denser media",
+    "Name the incident ray, refracted ray, normal and the two angles",
+    "State the rules of refraction"
+  ],
+  "source_references": [
+    "Class 10 Science, Light: Reflection and Refraction (draft)"
+  ],
+  "slides": [
+    {
+      "slide": 1,
+      "headline": "Why does a straw look bent?",
+      "bullets": [
+        "A straw in water looks bent",
+        "Light changes direction between materials",
+        "This bending is called refraction"
+      ]
+    },
+    {
+      "slide": 2,
+      "headline": "Rarer and denser media",
+      "layout": "compare",
+      "diagram": {
+        "left": {
+          "title": "Rarer medium",
+          "points": [
+            "Example: air",
+            "Light travels faster"
+          ]
+        },
+        "right": {
+          "title": "Denser medium",
+          "points": [
+            "Examples: glass, water",
+            "Light travels slower"
+          ]
+        }
+      }
+    },
+    {
+      "slide": 3,
+      "headline": "Refraction: air to glass",
+      "layout": "illustration",
+      "diagram": {
+        "template": "refraction",
+        "params": {
+          "medium": "glass",
+          "direction": "into_denser",
+          "angle": 50
+        }
+      }
+    },
+    {
+      "slide": 4,
+      "headline": "Refraction: water to air",
+      "layout": "illustration",
+      "diagram": {
+        "template": "refraction",
+        "params": {
+          "medium": "water",
+          "direction": "into_rarer",
+          "angle": 28
+        }
+      }
+    },
+    {
+      "slide": 5,
+      "headline": "Rules of refraction",
+      "layout": "flow",
+      "diagram": {
+        "steps": [
+          {
+            "label": "Rarer to denser: bends towards the normal",
+            "role": "input"
+          },
+          {
+            "label": "Denser to rarer: bends away from the normal",
+            "role": "output"
+          },
+          {
+            "label": "Along the normal: no bending"
+          }
+        ]
+      }
+    },
+    {
+      "slide": 6,
+      "headline": "Summary",
+      "bullets": [
+        "Refraction is the bending of light",
+        "It happens because light has different speeds in different media",
+        "Think: why does a straw in water look bent?"
+      ]
+    }
+  ]
+}

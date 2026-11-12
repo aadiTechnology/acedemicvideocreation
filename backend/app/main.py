@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import threading
 import uuid
 
@@ -94,3 +95,14 @@ def create_app(settings: Settings | None = None, oidc_http=None, identity_http=N
 
 
 app = create_app()
+
+
+def _maintenance_on_start() -> None:
+    """The one-time Aadi-Test wipe and seed, only when APP_MAINTENANCE, APP_MAINTENANCE_ID and APP_MAINTENANCE_CONFIRM are all set (see seed_aadi_test)."""
+    from app import seed_aadi_test
+
+    seed_aadi_test.run_if_requested()
+
+
+if os.environ.get("APP_MAINTENANCE"):
+    _maintenance_on_start()
