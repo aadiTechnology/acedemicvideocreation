@@ -40,6 +40,7 @@ class FakeEngine:
         self.seen_headers: list[dict] = []
         self.valid_tokens: set[str] = set()  # Identity tokens this fake accepts (in addition to the key)
         self.token_calls = 0
+        self.usage_events: list[dict] = []
         self.http = httpx.Client(transport=httpx.MockTransport(self.handle), base_url="http://engine.test")
 
     # ---- test controls ----
@@ -84,6 +85,13 @@ class FakeEngine:
         if path == "/api/v1/previews" and method == "POST":
             self.previews.append(json.loads(request.content))
             return httpx.Response(200, content=PNG, headers={"content-type": "image/png"})
+        if path == "/api/v1/usage" and method == "GET":
+            who = request.headers.get("x-tenant-id")
+            events = [e for e in self.usage_events if e["tenant_id"] == who]
+            totals: dict = {}
+            for e in events:
+                totals[e["meter"]] = totals.get(e["meter"], 0) + e["quantity"]
+            return httpx.Response(200, json={"events": events, "totals": totals, "count": len(events)})
         if path == "/api/v1/layouts" and method == "GET":
             return httpx.Response(200, json={"layouts": [{"name": "bullets", "title": "Key points", "example": {}}, {"name": "timeline", "title": "Timeline", "example": {"diagram": {"events": []}}}]})
         if path == "/api/v1/layouts/recommend" and method == "POST":

@@ -143,6 +143,11 @@ class EngineClient:
     def upload_audio(self, job_id: str, data: bytes, cid: str | None = None, tenant: str | None = None) -> dict:
         return self._request("POST", f"/api/v1/video-jobs/{job_id}/audio", cid, tenant, files={"audio": ("audio.zip", data, "application/zip")}).json()
 
+    def usage(self, tenant: str, since: str | None = None, until: str | None = None, cid: str | None = None) -> dict:
+        """What this school's finished videos consumed (the engine answers a token only for its own company)."""
+        params = {k: v for k, v in (("since", since), ("until", until)) if v}
+        return self._request("GET", "/api/v1/usage", cid, tenant, params=params).json()
+
     def preview(self, payload: dict, cid: str | None = None, tenant: str | None = None) -> bytes:
         return self._request("POST", "/api/v1/previews", cid, tenant, json=payload).content
 

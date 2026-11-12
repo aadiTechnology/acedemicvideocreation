@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
-import { api, ApiError, LANGUAGES, Language, LessonRow, Me, Named, versions } from "./api";
+import { api, ApiError, LANGUAGES, Language, LessonRow, Me, Named, versions, video, VideoUsage } from "./api";
 import { COURSE_TYPES, labelsFor } from "./labels";
 import OrgAdmin from "./aadi-org/OrgAdmin";
 import VersionPanel from "./VersionPanel";
 
-type Tab = "lessons" | "structure" | "people";
+type Tab = "lessons" | "structure" | "people" | "usage";
 
 const label = (code: string) => LANGUAGES.find((l) => l.code === code)?.label ?? code;
 const statusText = (s: string) => s.replace("_", " ");
@@ -122,6 +122,36 @@ function NewLesson({ s, onCreated }: { s: ReturnType<typeof useStructure>; onCre
   );
 }
 
+const METERS: Record<string, string> = {
+  "video.minutes_rendered": "Video made (minutes)", "video.slides_rendered": "Slides made", "tts.characters": "Narration (characters of speech)",
+};
+
+function UsageTab() {
+  const [data, setData] = useState<VideoUsage | null>(null);
+  const [err, setErr] = useState("");
+  useEffect(() => { video.usage().then(setData).catch((e) => setErr((e as ApiError).message)); }, []);
+  return (
+    <div className="card">
+      <h3>Video usage of your school</h3>
+      <p className="muted">What the finished videos of your school used. This is what a bill would be based on.</p>
+      <Errors message={err} />
+      {data && (data.count === 0 ? <p className="muted">No finished videos yet.</p> : (
+        <>
+          <table>
+            <thead><tr><th>What</th><th>Total</th></tr></thead>
+            <tbody>{Object.entries(data.totals).map(([m, q]) => <tr key={m}><td>{METERS[m] ?? m}</td><td>{q}</td></tr>)}</tbody>
+          </table>
+          <h3 style={{ marginTop: 16 }}>Latest records</h3>
+          <table>
+            <thead><tr><th>When</th><th>What</th><th>Amount</th><th>Detail</th></tr></thead>
+            <tbody>{[...data.events].reverse().slice(0, 15).map((e) => <tr key={e.event_id}><td>{new Date(e.ts).toLocaleString()}</td><td>{METERS[e.meter] ?? e.meter}</td><td>{e.quantity} {e.unit}</td><td>{e.dimension ?? ""}</td></tr>)}</tbody>
+          </table>
+        </>
+      ))}
+    </div>
+  );
+}
+
 function LessonsTab({ s, me }: { s: ReturnType<typeof useStructure>; me: Me }) {
   const [rows, setRows] = useState<LessonRow[]>([]);
   const [language, setLanguage] = useState("");
@@ -181,6 +211,7 @@ const NAV: { key: Tab; label: string; icon: string }[] = [
   { key: "lessons", label: "Lessons", icon: "\u25A3" },
   { key: "structure", label: "Structure", icon: "\u2637" },
   { key: "people", label: "People and roles", icon: "\u263B" },
+  { key: "usage", label: "Video usage", icon: "\u2593" },
 ];
 
 export default function App() {
@@ -190,6 +221,7 @@ export default function App() {
   useEffect(() => { versions.me().then(setMe); }, []);
   useEffect(() => { document.body.classList.remove("nav-open"); }, [tab]);
   const canSeePeople = (me.caps ?? []).includes("org.users.view");
+  const canSeeUsage = (me.caps ?? []).includes("org.users.manage");
   const signedInWithIdentity = Boolean(me.hub_url); // in local development there is no Identity session to end
   const role = me.roles.length ? me.roles.map(statusText).join(", ") : "";
   return (
@@ -198,7 +230,7 @@ export default function App() {
       <aside className="sb" aria-label="Primary">
         <div className="brand"><div className="logo">A</div><div><b>Aadi Academic Video Creation</b><small>Lessons to narrated videos</small></div></div>
         <nav aria-label="Main navigation">
-          {NAV.filter((n) => n.key !== "people" || canSeePeople).map((n) => (
+          {NAV.filter((n) => (n.key !== "people" || canSeePeople) && (n.key !== "usage" || canSeeUsage)).map((n) => (
             <button key={n.key} className={`nav ${tab === n.key ? "active" : ""}`} aria-current={tab === n.key ? "page" : undefined} onClick={() => setTab(n.key)}>
               <span className="ic" aria-hidden="true">{n.icon}</span>{n.label}
             </button>
@@ -214,7 +246,7 @@ export default function App() {
           {me.hub_url && <a className="btn" href={me.hub_url} data-testid="switch-product">Switch product</a>}
           {signedInWithIdentity && <a className="btn" href="/auth/logout" data-testid="signout">Sign out</a>}
         </header>
-        <main id="main" tabIndex={-1}>{tab === "lessons" ? <LessonsTab s={s} me={me} /> : tab === "structure" ? <StructureTab s={s} /> : <OrgAdmin base="/api" title="People and roles" />}</main>
+        <main id="main" tabIndex={-1}>{tab === "lessons" ? <LessonsTab s={s} me={me} /> : tab === "structure" ? <StructureTab s={s} /> : tab === "usage" ? <UsageTab /> : <OrgAdmin base="/api" title="People and roles" />}</main>
       </div>
     </div>
   );

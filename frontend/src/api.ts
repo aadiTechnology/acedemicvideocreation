@@ -86,6 +86,8 @@ export interface VideoJob {
 }
 export interface VideoAsset { id: string; kind: string; filename: string; size_bytes: number; duration_seconds?: number; width?: number; height?: number; fps?: number }
 export interface VideoSummary { job: VideoJob | null; assets: VideoAsset[]; history: VideoJob[]; can_generate: boolean; blocked_reason: string | null }
+export interface VideoUsageEvent { event_id: string; ts: string; meter: string; quantity: number; unit: string; dimension?: string | null; job_id: string }
+export interface VideoUsage { totals: Record<string, number>; count: number; events: VideoUsageEvent[] }
 export interface VideoCaps { providers: { name: string; modes: string[]; configured: boolean }[]; profiles: string[] }
 
 export const video = {
@@ -96,6 +98,7 @@ export const video = {
   retry: (jobId: string) => call<VideoSummary>("POST", `/video-jobs/${jobId}/retry`, {}),
   remake: (jobId: string, body: { profile: string; theme: string; subtitles: boolean }) => call<VideoSummary>("POST", `/video-jobs/${jobId}/remake`, body),
   cancel: (jobId: string) => call<VideoSummary>("POST", `/video-jobs/${jobId}/cancel`, {}),
+  usage: () => call<VideoUsage>("GET", "/video/usage"),
   async uploadAudio(jobId: string, file: File): Promise<VideoSummary> {
     const form = new FormData();
     form.append("audio", file);

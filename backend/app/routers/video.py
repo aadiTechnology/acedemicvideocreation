@@ -233,6 +233,21 @@ def capabilities(request: Request, user: CurrentUser = Depends(current_user)):
             "features": caps["features"]}
 
 
+@router.get("/video/usage")
+def video_usage(request: Request, since: str | None = None, until: str | None = None, user: CurrentUser = Depends(require_cap("org.users.manage"))):
+    """What this school's videos used (video minutes, slides, speech characters), for administrators. Read from the Video Engine with the
+    school's own token, so it can only ever show this school."""
+    try:
+        data = client_of(request).usage(user.tenant_id, since, until, cid_of(request))
+    except EngineRejected as exc:
+        if exc.status == 422:
+            raise HTTPException(422, "Dates must look like 2026-11-01.") from None
+        raise HTTPException(503, FRIENDLY["engine_unavailable"]) from None
+    except EngineUnavailable:
+        raise HTTPException(503, FRIENDLY["engine_unavailable"]) from None
+    return {"totals": data.get("totals", {}), "count": data.get("count", 0), "events": data.get("events", [])[-200:]}
+
+
 @router.get("/lesson-versions/{version_id}/video")
 def get_video(version_id: str, request: Request, db: Session = Depends(get_db), user: CurrentUser = Depends(current_user)):
     version = owned(db, m.LessonVersion, version_id, user)
