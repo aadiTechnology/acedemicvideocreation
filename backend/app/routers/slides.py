@@ -246,7 +246,7 @@ def preview_slide(version_id: str, number: int, body: PreviewIn, request: Reques
                          "subtitle_text": body.subtitle_text or row["subtitle_text"]},
                "plan": entry, "key_terms": (v.lesson_plan or {}).get("key_terms", []), "at": body.at, "profile": body.profile, "subtitles": body.subtitles}
     payload["media"] = _preview_media(v, entry)
-    png = _engine_call(lambda: client_of(request).preview(payload))
+    png = _engine_call(lambda: client_of(request).preview(payload, None, user.tenant_id))
     return Response(png, media_type="image/png", headers={"Cache-Control": "no-store"})
 
 
@@ -260,9 +260,9 @@ def recommend_layout(version_id: str, number: int, request: Request, db: Session
     klass = db.get(m.SchoolClass, subject.class_id)
     body = {"subject": subject.name, "topic": f"{topic.title} {row['module']}", "objective": " ".join(lesson.learning_objectives),
             "class_name": klass.name, "course_type": klass.course_type, "narration": row["voice_text"], "limit": 3}
-    return _engine_call(lambda: client_of(request).recommend(body))
+    return _engine_call(lambda: client_of(request).recommend(body, None, user.tenant_id))
 
 
 @layouts_router.get("")
 def list_layouts(request: Request, user: CurrentUser = Depends(current_user)):
-    return _engine_call(lambda: client_of(request).layouts())
+    return _engine_call(lambda: client_of(request).layouts(None, user.tenant_id))

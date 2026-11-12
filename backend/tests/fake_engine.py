@@ -38,6 +38,8 @@ class FakeEngine:
         self.reject: tuple[int, str, str] | None = None  # (status, code, message) for the next submit
         self.corrupt_download = False
         self.seen_headers: list[dict] = []
+        self.valid_tokens: set[str] = set()  # Identity tokens this fake accepts (in addition to the key)
+        self.token_calls = 0
         self.http = httpx.Client(transport=httpx.MockTransport(self.handle), base_url="http://engine.test")
 
     # ---- test controls ----
@@ -66,7 +68,12 @@ class FakeEngine:
         if self.down:
             raise httpx.ConnectError("engine is down")
         self.seen_headers.append(dict(request.headers))
-        if request.headers.get("x-engine-key") != self.KEY:
+        bearer = request.headers.get("authorization", "")
+        if bearer.lower().startswith("bearer "):
+            if bearer[7:] not in self.valid_tokens:
+                return self._err(401, "invalid_token", "The access token is missing, expired or not valid for this service.")
+            self.token_calls += 1
+        elif request.headers.get("x-engine-key") != self.KEY:
             return self._err(401, "unauthorized", "Missing or invalid engine key.")
         path, method = request.url.path, request.method
         if path == "/api/v1/capabilities":

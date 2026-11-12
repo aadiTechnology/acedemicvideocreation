@@ -32,6 +32,8 @@ The API is not published under `academicsapi.aaditechnology.com`: the browser on
 | `SESSION_SECRET` | signs the session and sign-in cookies |
 | `IDENTITY_CLIENT_SECRET` | the client secret registered in Identity |
 | `VIDEO_ENGINE_API_KEY` | same value as the engine's `ENGINE_API_KEY` |
+| `VIDEO_ENGINE_AUTH` | `key` (default: shared key), `auto` (Identity token per company, key as fallback) or `token` (token only, no key) |
+| `VIDEO_ENGINE_CLIENT_ID`, `VIDEO_ENGINE_CLIENT_SECRET` | the Identity service client for the Video Engine (admin page, Service clients); needed for `auto` and `token`, with `IDENTITY_ISSUER_URL` |
 | `APP_BASE_URL`, `IDENTITY_ISSUER_URL`, `IDENTITY_CLIENT_ID`, `VIDEO_ENGINE_URL`, `VIDEO_ENGINE_TIMEOUT_SECONDS` | have defaults in the compose file |
 
 `APP_ENV=production` and `AUTH_MODE=oidc` are fixed in the compose file; the API refuses to start in production with `AUTH_MODE=dev`.
@@ -73,3 +75,7 @@ By default (`STORAGE_PROVIDER=local`) videos stay on the `academic_storage` volu
 - Do not make the bucket public. Optional: add a bucket lifecycle rule to keep only the last version of each file.
 
 **Automatic move of older videos.** With `STORAGE_PROVIDER=b2`, the app moves any video still on the local volume into the bucket in the background each time it starts (`B2_MOVE_EXISTING_ON_START`, on by default; set it to 0 to disable). It is repeatable, skips what is already in the bucket, and deletes a local file only after the upload is confirmed. The result is logged as `move-to-b2`. `python -m app.tools.move_to_b2` still works by hand.
+
+## Calling the Video Engine with Identity tokens
+
+Order matters: (1) in Identity, the company must have the Video Engine service turned on and the `academic-video` client must exist; (2) the engine runs `ENGINE_AUTH_MODE=both` with `ENGINE_IDENTITY_ISSUER` set; (3) then set `VIDEO_ENGINE_AUTH=auto` plus the client id and secret here and redeploy. Academic asks Identity for a 10-minute token per company, caches it and renews it a minute before it expires; with `auto` it uses the shared key only if Identity cannot give a token (the engine logs each key use). Once logs show no key use, switch to `token` and remove `VIDEO_ENGINE_API_KEY`. Rollback: set `VIDEO_ENGINE_AUTH=key` and redeploy.

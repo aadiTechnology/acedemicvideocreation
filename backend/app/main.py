@@ -42,7 +42,7 @@ def create_app(settings: Settings | None = None, oidc_http=None, identity_http=N
     settings = settings or load_settings()
     app = FastAPI(title="Aadi Academic Video Creation", version="0.1.0")
     app.state.settings = settings
-    app.state.engine = EngineClient(settings, engine_http)
+    app.state.engine = EngineClient(settings, engine_http, identity_http)
     app.state.store = object_store if object_store is not None else make_store(settings)  # None: files stay on the local volume
     if settings.database_url:
         database.init_db(settings.database_url)

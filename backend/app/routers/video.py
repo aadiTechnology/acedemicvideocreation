@@ -221,7 +221,7 @@ def _get_job(db: Session, job_id: str, user: CurrentUser) -> m.VideoJob:
 @router.get("/video/capabilities")
 def capabilities(request: Request, user: CurrentUser = Depends(current_user)):
     try:
-        caps = client_of(request).capabilities(cid_of(request))
+        caps = client_of(request).capabilities(cid_of(request), user.tenant_id)
     except (EngineUnavailable, EngineRejected):
         raise HTTPException(503, FRIENDLY["engine_unavailable"]) from None
     return {"languages": caps["languages"], "profiles": caps["output_profiles"],
