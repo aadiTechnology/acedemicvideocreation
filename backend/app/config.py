@@ -31,6 +31,8 @@ class Settings:
     video_engine_client_id: str = ""  # Identity service client for calling the Video Engine (client_credentials)
     video_engine_client_secret: str = ""
     identity_product_secret: str = ""  # lets this product enrol its people in Aadi Identity (set with `python -m app.cli set-product-secret` on Identity)
+    identity_service_client_id: str = ""  # preferred way to call Identity: a service client for audience "identity" (see identity_client.py)
+    identity_service_client_secret: str = ""
     storage_dir: str = ""
     storage_provider: str = "local"   # "local" (a volume) or "b2" (Backblaze B2, S3-compatible)
     b2_endpoint: str = ""
@@ -59,6 +61,8 @@ def load_settings(env=None) -> Settings:
         identity_client_secret=e.get("IDENTITY_CLIENT_SECRET", ""),
         identity_product_key=e.get("IDENTITY_PRODUCT_KEY", "academics"),
         identity_product_secret=e.get("IDENTITY_PRODUCT_SECRET", "").strip(),
+        identity_service_client_id=e.get("IDENTITY_SERVICE_CLIENT_ID", "").strip(),
+        identity_service_client_secret=e.get("IDENTITY_SERVICE_CLIENT_SECRET", "").strip(),
         video_engine_url=e.get("VIDEO_ENGINE_URL", "").rstrip("/"),
         video_engine_api_key=e.get("VIDEO_ENGINE_API_KEY", ""),
         video_engine_timeout=float(e.get("VIDEO_ENGINE_TIMEOUT_SECONDS", "30")),
