@@ -22,6 +22,7 @@ from app.config import Settings
 
 log = logging.getLogger("academic.identity")
 RENEW_BEFORE_SECONDS = 60
+ENTITLEMENT_TTL_SECONDS = 300
 
 
 class IdentityClient:
@@ -32,6 +33,7 @@ class IdentityClient:
         self.service_secret = getattr(settings, "identity_service_client_secret", "")
         self.http = http or httpx.Client(timeout=10.0)
         self._tokens: dict[tuple[str, str], tuple[str, float]] = {}  # (scope, company) -> (token, monotonic expiry)
+        self._entitlements: dict[str, tuple[dict, float]] = {}  # company -> (answer, monotonic time fetched)
         self._lock = threading.Lock()
 
     @property
@@ -66,16 +68,23 @@ class IdentityClient:
             self._tokens[key] = (body["access_token"], time.monotonic() + int(body.get("expires_in", 600)))
         return body["access_token"], ""
 
-    def _post(self, path: str, body: dict, scope: str = "") -> dict:
-        headers = {"Authorization": f"Bearer {self.secret}"}
+    def _auth(self, scope: str, tenant_id: str) -> tuple[dict | None, bool, str]:
+        """How to authenticate one call: (headers, use_v1_paths, why_not). A service token when configured and obtainable; otherwise the product secret."""
         if self.token_mode and scope:
-            token, why = self._token(scope, body.get("tenant_id", ""))
+            token, why = self._token(scope, tenant_id)
             if token:
-                headers, path = {"Authorization": f"Bearer {token}"}, path.replace("/api/", "/api/v1/", 1)
-            elif self.secret:
-                log.warning("identity service token unavailable (%s); using the product secret", why)
-            else:
-                return {"ok": False, "message": why}
+                return {"Authorization": f"Bearer {token}"}, True, ""
+            if not self.secret:
+                return None, False, why
+            log.warning("identity service token unavailable (%s); using the product secret", why)
+        return {"Authorization": f"Bearer {self.secret}"}, False, ""
+
+    def _post(self, path: str, body: dict, scope: str = "") -> dict:
+        headers, v1, why = self._auth(scope, body.get("tenant_id", ""))
+        if headers is None:
+            return {"ok": False, "message": why}
+        if v1:
+            path = path.replace("/api/", "/api/v1/", 1)
         try:
             r = self.http.post(f"{self.base}{path}", json=body, headers=headers)
         except httpx.HTTPError:
@@ -90,6 +99,33 @@ class IdentityClient:
                 return {"ok": False, "message": "Aadi Identity did not accept this email address. Check it and add the person again."}
             return {"ok": False, "message": detail if isinstance(detail, str) and detail else f"Aadi Identity refused ({r.status_code})."}
         return {"ok": True, **r.json()}
+
+    def entitlements(self, tenant_id: str) -> dict | None:
+        """What this company may use of THIS product (plan, features, limits, seats), from Identity. Cached for ENTITLEMENT_TTL_SECONDS; if Identity cannot
+        answer, the last known answer is returned (stale is better than locking people out); None only if there never was one. Nothing in the product calls
+        this yet: it is the reader the next products and the plan-based features will use."""
+        now = time.monotonic()
+        with self._lock:
+            got = self._entitlements.get(tenant_id)
+            if got and now - got[1] < ENTITLEMENT_TTL_SECONDS:
+                return got[0]
+        headers, _, why = self._auth("identity:entitlements", tenant_id)
+        answer = None
+        if headers is not None:
+            try:
+                r = self.http.get(f"{self.base}/api/v1/entitlements", params={"tenant_id": tenant_id}, headers=headers)
+                if r.status_code == 200:
+                    answer = r.json()
+                else:
+                    log.warning("identity entitlements refused (%s)", r.status_code)
+            except httpx.HTTPError:
+                log.exception("identity unreachable (entitlements)")
+        with self._lock:
+            if answer is not None:
+                self._entitlements[tenant_id] = (answer, now)
+                return answer
+            got = self._entitlements.get(tenant_id)
+            return got[0] if got else None
 
     def enrol(self, tenant_id: str, email: str, name: str, actor: str) -> dict:
         out = self._post("/api/products/enrol", {"tenant_id": tenant_id, "email": email, "name": name, "actor": actor}, "identity:enrol")

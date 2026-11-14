@@ -100,3 +100,63 @@ def test_identity_unreachable_during_the_token_request_does_not_raise():
 
 def test_nothing_is_enabled_with_neither_secret_nor_service_client():
     assert not make(Fake()).enabled
+
+
+# ---- entitlement reader (P2-S5) -------------------------------------------------------------------------------------
+ANSWER = {"tenant_id": "t1", "product": "tracker", "entitled": True, "plan": {"key": "tracker-pro", "name": "Tracker Pro"}, "features": ["costing"], "limits": {"projects": 50}}
+
+
+class Ent(Fake):
+    def __init__(self, fail=False, **kw):
+        super().__init__(**kw)
+        self.fail = fail
+        self.reads = 0
+
+    def __call__(self, req):
+        if req.url.path == "/api/v1/entitlements":
+            self.calls.append((req.method, req.url.path, dict(req.headers), str(req.url.query)))
+            self.reads += 1
+            if self.fail:
+                raise httpx.ConnectError("down")
+            return httpx.Response(200, json=ANSWER)
+        return super().__call__(req)
+
+
+def test_entitlements_are_read_with_a_token_scoped_to_that_action_and_cached():
+    f = Ent()
+    c = make(f, service_id="i", service_secret="s")
+    assert c.entitlements("t1") == ANSWER and c.entitlements("t1") == ANSWER
+    assert f.reads == 1  # the second call came from the cache
+    tok = next(call for call in f.calls if call[1] == "/token")
+    assert "scope=identity%3Aentitlements" in tok[3] and "tenant_id=t1" in tok[3]
+    read = next(call for call in f.calls if call[1] == "/api/v1/entitlements")
+    assert read[2]["authorization"] == "Bearer tok-1" and "tenant_id=t1" in read[3]
+
+
+def test_entitlements_with_only_the_shared_secret_use_the_secret():
+    f = Ent()
+    c = make(f, secret="old")
+    assert c.entitlements("t1") == ANSWER
+    assert f.calls[0][2]["authorization"] == "Bearer old" and all(call[1] != "/token" for call in f.calls)
+
+
+def test_the_cache_expires_and_the_last_answer_is_served_if_identity_is_down(monkeypatch):
+    f = Ent()
+    c = make(f, secret="old")
+    c.entitlements("t1")
+    key = next(iter(c._entitlements))
+    c._entitlements[key] = (c._entitlements[key][0], c._entitlements[key][1] - 400)  # older than the 5 minutes
+    c.entitlements("t1")
+    assert f.reads == 2  # refreshed
+    f.fail = True
+    c._entitlements[key] = (c._entitlements[key][0], c._entitlements[key][1] - 400)
+    assert c.entitlements("t1") == ANSWER  # Identity unreachable: the last known answer, not a lock-out
+    assert Ent(fail=True) and make(Ent(fail=True), secret="old").entitlements("t9") is None  # never known: None
+
+
+def test_other_companies_are_cached_separately():
+    f = Ent()
+    c = make(f, secret="old")
+    c.entitlements("t1")
+    c.entitlements("t2")
+    assert f.reads == 2
